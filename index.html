@@ -954,11 +954,20 @@ function searchUnitDict() {
   if (!q) { box.classList.add("hidden"); return; }
   const hits = [];
   for (const [id, name] of Object.entries(names.units)) {
-    if (hits.length >= 40) break;
-    if (name.toLowerCase().includes(q) || id.includes(q)) hits.push({ id, name });
+    if (name.toLowerCase().includes(q) || id.includes(q)) {
+      const star = id.slice(-1);
+      hits.push({ id, name, star });
+    }
   }
-  box.innerHTML = hits.length
-    ? hits.map(h => `<div class="hit-item" onclick='pickUnitHit(${JSON.stringify(h.id)}, ${JSON.stringify(h.name)})'><span>${escapeHtml(h.name)}</span></div>`).join("")
+  // 按名称分组，同角色高星级排在前面
+  hits.sort((a, b) => a.name.localeCompare(b.name) || b.id.localeCompare(a.id));
+  const top = hits.slice(0, 100);
+  box.innerHTML = top.length
+    ? top.map(h => `
+        <div class="hit-item" onclick='pickUnitHit(${JSON.stringify(h.id)}, ${JSON.stringify(h.name + " (" + h.star + "★)")})'>
+          <span>${escapeHtml(h.name)}</span>
+          <span class="badge">${h.star}★ · ${h.id}</span>
+        </div>`).join("")
     : `<div class="hit-item muted">未找到相关兵员</div>`;
   box.classList.remove("hidden");
 }
