@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FFBE 离线版 存档修改器</title>
+<title>FFBE 离线版存档修改器</title>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
   :root {
@@ -27,7 +27,7 @@
     color: var(--text);
     font-size: 14px;
     line-height: 1.5;
-    padding-bottom: 42px;
+    padding-bottom: 44px;
   }
   header {
     background: var(--panel);
@@ -50,9 +50,12 @@
     background: var(--panel-alt);
     color: var(--muted);
     border: 1px solid var(--border);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .badge.ok { color: var(--green); border-color: rgba(63,185,80,.4); }
   .badge.warn { color: var(--amber); border-color: rgba(210,153,34,.4); }
+  .badge.blue { color: #79c0ff; border-color: rgba(76,139,245,.4); }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   button, .btn {
     background: var(--panel-alt);
@@ -66,6 +69,8 @@
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   button:hover, .btn:hover { border-color: var(--accent); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
@@ -84,7 +89,7 @@
     outline: none;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-  .container { max-width: 1140px; margin: 0 auto; padding: 16px; }
+  .container { max-width: 1160px; margin: 0 auto; padding: 16px; }
   .dropzone {
     display: block;
     border: 2px dashed var(--border);
@@ -105,7 +110,7 @@
     overflow-x: auto;
   }
   .tab {
-    padding: 8px 14px;
+    padding: 9px 15px;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     color: var(--muted);
@@ -115,26 +120,25 @@
   .card {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
+    border-radius: 10px;
+    padding: 18px;
     margin-bottom: 16px;
   }
-  .card h3 { margin: 0 0 8px 0; font-size: 15px; }
+  .card h3 { margin: 0 0 10px 0; font-size: 15px; }
   .grid-form {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 12px;
-    margin-top: 10px;
   }
-  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
   .field label { font-size: 12px; color: var(--muted); }
   .quick-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-  .table-wrap { overflow-x: auto; max-height: 62vh; border: 1px solid var(--border); border-radius: 6px; }
+  .table-wrap { overflow-x: auto; max-height: 62vh; border: 1px solid var(--border); border-radius: 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
-  th { background: var(--panel-alt); position: sticky; top: 0; z-index: 5; color: var(--muted); font-weight: 600; }
-  tr:hover td { background: rgba(255,255,255,.02); }
-  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  th { background: var(--panel-alt); position: sticky; top: 0; z-index: 5; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  tr:hover td { background: rgba(255,255,255,.025); }
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
   .status-bar {
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -151,63 +155,66 @@
   .hidden { display: none !important; }
   .modal-bg {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,.65);
+    background: rgba(0,0,0,.68);
     display: flex; align-items: center; justify-content: center;
     z-index: 50; padding: 16px;
   }
   .modal {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    width: 100%; max-width: 500px;
-    padding: 18px;
+    border-radius: 12px;
+    width: 100%; max-width: 520px;
+    padding: 20px;
     max-height: 90vh;
     overflow-y: auto;
   }
-  .modal h3 { margin: 0 0 12px 0; }
+  .modal h3 { margin: 0 0 12px 0; font-size: 16px; }
   .search-hits {
-    max-height: 200px;
+    max-height: 240px;
     overflow-y: auto;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    margin: 6px 0 12px 0;
+    border-radius: 8px;
+    margin: 8px 0 12px 0;
     background: #101319;
   }
   .hit-item {
-    padding: 7px 10px;
+    padding: 8px 12px;
     cursor: pointer;
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
     font-size: 13px;
   }
   .hit-item:hover { background: var(--panel-alt); }
   .hit-item:last-child { border-bottom: none; }
-  .picked-box {
-    background: rgba(76,139,245,.12);
-    border: 1px solid rgba(76,139,245,.35);
-    border-radius: 6px;
+  .picked-banner {
+    background: rgba(63,185,80,.12);
+    border: 1px solid rgba(63,185,80,.4);
+    color: #9be9a8;
+    border-radius: 8px;
     padding: 8px 12px;
-    margin: 8px 0 12px 0;
+    margin: 10px 0;
     font-size: 13px;
   }
-  details.adv {
-    margin-top: 12px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border);
+  .muted { color: var(--muted); font-size: 12px; }
+  details.advanced {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,.18);
   }
-  details.adv summary {
+  details.advanced summary {
     cursor: pointer;
     font-size: 12px;
     color: var(--muted);
     user-select: none;
   }
-  .muted { color: var(--muted); font-size: 12px; }
-  /* 防止按钮和标签文字竖排换行 */
-  .badge, button, .btn, th { white-space: nowrap; flex-shrink: 0; }
+  details.advanced .grid-form { margin-top: 10px; }
 
-  /* 手机端自适应优化 */
+  /* 手机端自适应卡片布局 */
   @media (max-width: 680px) {
     header { padding: 10px 12px; gap: 8px; }
     .brand { font-size: 15px; width: 100%; justify-content: space-between; }
@@ -218,12 +225,10 @@
     .filter-bar input[type="text"] { width: 100% !important; }
     .table-wrap { max-height: 65vh; }
 
-    /* 手机端隐藏表头，将表格转为卡片列表 */
     thead { display: none; }
     table, tbody { display: block; width: 100%; }
     td { border: none; padding: 0; }
 
-    /* 道具与装备：两行网格卡片 */
     #itemsBody tr {
       display: grid;
       grid-template-columns: auto 1fr auto;
@@ -238,7 +243,6 @@
     #itemsBody td:nth-child(3) input { width: 100% !important; max-width: 180px; }
     #itemsBody td:nth-child(4) { grid-column: 3; grid-row: 2; justify-self: end; }
 
-    /* 兵员列表：顶部名称 + 底部属性与操作 */
     #rosterBody tr {
       display: flex;
       flex-wrap: wrap;
@@ -250,7 +254,6 @@
     #rosterBody td:nth-child(1) { flex-basis: 100%; font-weight: 600; font-size: 14px; }
     #rosterBody td:last-child { margin-left: auto; }
 
-    /* 底部状态栏单行省略，不占高度 */
     .status-bar { padding: 6px 12px; }
     #statusText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #fileMeta { white-space: nowrap; }
@@ -261,8 +264,8 @@
 
 <header>
   <div class="brand">
-    <span>FFBE 离线版 存档修改器</span>
-    <span id="dictBadge" class="badge warn">图鉴加载中...</span>
+    <span>FFBE 离线版存档修改器</span>
+    <span id="dictBadge" class="badge warn">正在加载图鉴...</span>
     <span id="dirtyBadge" class="badge warn hidden">● 有未保存的修改</span>
   </div>
   <div class="toolbar">
@@ -278,8 +281,10 @@
 <div class="container">
   <label for="saveFileInput" id="dropzone" class="dropzone">
     <h2 style="margin:0 0 8px 0; font-size:18px;">点击选择或拖入游戏导出的存档文件</h2>
-    <p class="muted" style="margin:0;">所有修改均在本地浏览器完成，不会上传任何数据。<br>
-    支持游戏内导出的存档压缩包（自动修复校验，改完可直接导回游戏）。</p>
+    <p class="muted" style="margin:0;">
+      纯本地浏览器运行，存档不会上传至任何服务器。<br>
+      支持游戏内直接导出的存档压缩包（自动完成校验修复，导出后可直接导回游戏）。
+    </p>
   </label>
 
   <div id="editorArea" class="hidden">
@@ -333,10 +338,10 @@
           <table>
             <thead>
               <tr>
-                <th style="width:85px;">分类</th>
+                <th style="width:76px;">分类</th>
                 <th>名称</th>
                 <th style="width:140px;">持有数量</th>
-                <th style="width:65px;">操作</th>
+                <th style="width:68px;">操作</th>
               </tr>
             </thead>
             <tbody id="itemsBody"></tbody>
@@ -358,11 +363,11 @@
             <thead>
               <tr>
                 <th>兵员名称</th>
-                <th style="width:75px;">等级</th>
-                <th style="width:110px;">经验</th>
-                <th style="width:90px;">极限技 Lv</th>
+                <th style="width:80px;">等级</th>
+                <th style="width:110px;">当前经验</th>
+                <th style="width:90px;">极限技</th>
                 <th style="width:80px;">EX 觉醒</th>
-                <th style="width:130px;">操作</th>
+                <th style="width:120px;">操作</th>
               </tr>
             </thead>
             <tbody id="rosterBody"></tbody>
@@ -377,7 +382,7 @@
         <div class="filter-bar">
           <button class="primary" onclick="applyRawJson()">应用修改</button>
           <button onclick="refreshRawJson()">重新读取</button>
-          <span class="muted">仅供进阶玩家直接编辑底层存档数据，普通玩家无需操作此页。</span>
+          <span class="muted">仅供进阶玩家直接编辑底层存档数据，普通玩家无需操作。</span>
         </div>
         <textarea id="rawTextarea" style="width:100%; height:56vh; font-family:Consolas,monospace; font-size:12px;"></textarea>
       </div>
@@ -385,41 +390,50 @@
   </div>
 </div>
 
-<!-- 弹窗：添加道具/装备 -->
+<!-- 弹窗：添加道具/能力/装备 -->
 <div id="modalAddItem" class="modal-bg hidden">
   <div class="modal">
     <h3>添加道具 / 能力 / 装备</h3>
     <div class="field">
-      <label>搜索名称（输入中文或英文关键词）</label>
-      <input type="text" id="addItemSearch" placeholder="例如：召唤券、圣剑、魔石、觉醒..." oninput="searchItemDict()">
+      <label>第 1 步：输入名称或编号搜索，点击下方结果选中</label>
+      <input type="text" id="addItemSearch" placeholder="例如：召喚券、聖劍、魔石..." oninput="searchItemDict()">
     </div>
     <div id="addItemHits" class="search-hits hidden"></div>
-    <div id="addItemPicked" class="picked-box hidden"></div>
-    <div class="field" style="margin-top:8px;">
-      <label>添加数量</label>
+    <div id="pickedItemBanner" class="picked-banner hidden"></div>
+
+    <div class="field" style="margin-top:10px;">
+      <label>第 2 步：填写要添加的数量</label>
       <input type="number" id="addItemCount" value="1" min="1">
     </div>
-    <details class="adv">
-      <summary>高级选项（一般无需修改，系统已自动识别分类）</summary>
-      <div class="grid-form" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+    <div class="quick-bar" style="margin-top:8px;">
+      <button class="sm" onclick="setAddItemCount(1)">× 1</button>
+      <button class="sm" onclick="setAddItemCount(10)">× 10</button>
+      <button class="sm" onclick="setAddItemCount(99)">× 99</button>
+      <button class="sm" onclick="setAddItemCount(999)">× 999</button>
+    </div>
+
+    <details class="advanced">
+      <summary>高级选项（系统已自动识别，一般无需修改）</summary>
+      <div class="grid-form" style="grid-template-columns:1fr 1fr;">
         <div class="field">
-          <label>归属分类</label>
+          <label>背包分类</label>
           <select id="addItemSection">
             <option value="0">道具 / 能力</option>
             <option value="1">装备</option>
           </select>
         </div>
         <div class="field">
-          <label>内部类型值</label>
-          <input type="number" id="addItemType" value="20">
+          <label>子类型编号</label>
+          <input type="number" id="addItemType" value="20" oninput="addItemTypeManual = true;">
         </div>
-        <div class="field">
+        <div class="field" style="grid-column:1/-1;">
           <label>物品编号</label>
-          <input type="number" id="addItemId" placeholder="自动填入">
+          <input type="number" id="addItemId" placeholder="选中搜索结果后自动填入">
         </div>
       </div>
     </details>
-    <div class="quick-bar" style="justify-content:flex-end; margin-top:16px;">
+
+    <div class="quick-bar" style="justify-content:flex-end; margin-top:18px;">
       <button onclick="closeModal('modalAddItem')">取消</button>
       <button class="primary" onclick="submitAddItem()">确认添加</button>
     </div>
@@ -431,57 +445,66 @@
   <div class="modal">
     <h3>新增兵员</h3>
     <div class="field">
-      <label>搜索兵员名称</label>
-      <input type="text" id="addUnitSearch" placeholder="输入兵员中文或英文名..." oninput="searchUnitDict()">
+      <label>第 1 步：输入兵员名称或编号搜索并点击选中</label>
+      <input type="text" id="addUnitSearch" placeholder="例如：拉斯韋爾、克勞德、Neo Vision..." oninput="searchUnitDict()">
     </div>
     <div id="addUnitHits" class="search-hits hidden"></div>
-    <div id="addUnitPicked" class="picked-box hidden"></div>
-    <div class="grid-form" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+    <div id="pickedUnitBanner" class="picked-banner hidden"></div>
+
+    <div class="grid-form" style="grid-template-columns:1fr 1fr; margin-top:10px;">
       <div class="field">
         <label>初始等级</label>
         <input type="number" id="addUnitLevel" value="1" min="1">
       </div>
-      <div class="field" style="justify-content:center;">
-        <label style="flex-direction:row; align-items:center; gap:6px; cursor:pointer; color:var(--text);">
-          <input type="checkbox" id="addUnitFav"> 设为最爱（防止误卖/自动转化）
+      <div class="field" style="justify-content:flex-end;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text); padding-bottom:6px;">
+          <input type="checkbox" id="addUnitFav" checked> 设为最爱（防误分解）
         </label>
       </div>
     </div>
-    <details class="adv">
-      <summary>高级选项（手动指定兵员编号与经验）</summary>
-      <div class="grid-form" style="grid-template-columns:1fr 1fr; margin-top:8px;">
-        <div class="field"><label>兵员编号</label><input type="number" id="addUnitMaster" placeholder="自动填入"></div>
-        <div class="field"><label>初始经验</label><input type="number" id="addUnitExp" value="0"></div>
+
+    <details class="advanced">
+      <summary>高级选项（手动指定兵员编号与初始经验）</summary>
+      <div class="grid-form" style="grid-template-columns:1fr 1fr;">
+        <div class="field">
+          <label>兵员编号</label>
+          <input type="number" id="addUnitMaster" placeholder="选中搜索结果后自动填入">
+        </div>
+        <div class="field">
+          <label>初始经验</label>
+          <input type="number" id="addUnitExp" value="0" min="0">
+        </div>
       </div>
     </details>
-    <div class="quick-bar" style="justify-content:flex-end; margin-top:16px;">
+
+    <div class="quick-bar" style="justify-content:flex-end; margin-top:18px;">
       <button onclick="closeModal('modalAddUnit')">取消</button>
       <button class="primary" onclick="submitAddUnit()">确认新增</button>
     </div>
   </div>
 </div>
 
-<!-- 弹窗：编辑兵员 -->
+<!-- 弹窗：修改兵员 -->
 <div id="modalEditUnit" class="modal-bg hidden">
   <div class="modal">
-    <h3 id="editUnitTitle">编辑兵员</h3>
+    <h3 id="editUnitTitle">修改兵员</h3>
     <input type="hidden" id="editUnitIdx">
     <div class="grid-form" style="grid-template-columns:1fr 1fr;">
-      <div class="field"><label>等级</label><input type="number" id="editUnitLevel"></div>
-      <div class="field"><label>当前经验</label><input type="number" id="editUnitExp"></div>
-      <div class="field"><label>极限技等级</label><input type="number" id="editUnitLbLv"></div>
-      <div class="field"><label>极限技经验</label><input type="number" id="editUnitLbExp"></div>
-      <div class="field"><label>EX 觉醒等级 (0~3)</label><input type="number" id="editUnitExLv"></div>
+      <div class="field"><label>等级</label><input type="number" id="editUnitLevel" min="1"></div>
+      <div class="field"><label>当前经验</label><input type="number" id="editUnitExp" min="0"></div>
+      <div class="field"><label>极限技等级</label><input type="number" id="editUnitLbLv" min="1"></div>
+      <div class="field"><label>极限技经验</label><input type="number" id="editUnitLbExp" min="0"></div>
+      <div class="field"><label>EX 觉醒等级（0~3）</label><input type="number" id="editUnitExLv" min="0" max="3"></div>
     </div>
-    <div class="quick-bar" style="justify-content:flex-end; margin-top:16px;">
+    <div class="quick-bar" style="justify-content:flex-end; margin-top:18px;">
       <button onclick="closeModal('modalEditUnit')">取消</button>
-      <button class="primary" onclick="submitEditUnit()">确定</button>
+      <button class="primary" onclick="submitEditUnit()">保存修改</button>
     </div>
   </div>
 </div>
 
 <div class="status-bar">
-  <span id="statusText">就绪：请选择游戏导出的存档文件</span>
+  <span id="statusText">就绪：请点击或拖入游戏导出的存档文件</span>
   <span id="fileMeta"></span>
 </div>
 
@@ -541,13 +564,13 @@ function sha256Hex(bytes) {
 const CUR_KEYS = [
   ["lapis_free", "免费宝石"],
   ["lapis_paid", "付费宝石"],
-  ["gil", "金币"],
-  ["friend_point", "友情点数"]
+  ["gil", "GIL"],
+  ["friend_point", "羁绊点数"]
 ];
 const RANK_KEYS = [
-  ["level", "玩家等级"],
-  ["exp", "当前等级经验"],
-  ["nrg", "当前体力"]
+  ["level", "RANK"],
+  ["exp", "RANK EXP"],
+  ["nrg", "体力"]
 ];
 const BANK_LABELS = [
   ["XeRVw3s2", "持有 EXP（等级UP）"],
@@ -567,24 +590,32 @@ const BANK_LABELS = [
 ];
 
 let saveData = null;
-let saveBaseName = "save";
+let saveBaseName = "exvius_save";
 let isZipMode = false;
 let currentZip = null;
 let manifestName = "";
 let manifestObj = null;
 let lastBlobUrl = null;
+let addItemTypeManual = false;
 let names = { items: {}, equipment: {}, materia: {}, units: {} };
 
-// 自动读取同目录中文图鉴
+let lastItemHits = [];
+let lastUnitHits = [];
+let itemsShowAll = false;
+let lastItemsFilter = "";
+let rosterShowAll = false;
+let lastRosterFilter = "";
+
+// 自动加载同目录中文图鉴
 fetch("./names.json")
   .then(r => r.ok ? r.json() : Promise.reject())
-  .then(d => applyNames(d, "中文图鉴已自动加载"))
+  .then(d => applyNames(d, "中文图鉴已自动加载，请打开存档开始修改"))
   .catch(() => {
     const badge = document.getElementById("dictBadge");
-    badge.textContent = "未加载中文图鉴";
+    badge.textContent = "图鉴未加载";
     badge.className = "badge warn";
     document.getElementById("manualDictBtn").classList.remove("hidden");
-    setStatus("提示：本地直接打开时请点击右上角「导入中文图鉴」（在线访问会自动加载）。");
+    setStatus("提示：本地直接打开时请点击上方「导入中文图鉴」（在线部署后会自动加载）。");
   });
 
 function applyNames(d, msg) {
@@ -609,7 +640,7 @@ function markDirty(flag = true) {
   document.getElementById("dirtyBadge").classList.toggle("hidden", !flag);
 }
 
-// 拖拽与文件选择
+// 文件读取与拖拽
 const dropzone = document.getElementById("dropzone");
 dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("dragover"); });
 dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
@@ -627,8 +658,8 @@ document.getElementById("dictFileInput").addEventListener("change", e => {
   if (!f) return;
   const reader = new FileReader();
   reader.onload = () => {
-    try { applyNames(JSON.parse(reader.result), "中文图鉴导入成功"); }
-    catch { alert("图鉴文件格式不正确，请重新选择。"); }
+    try { applyNames(JSON.parse(reader.result), "中文图鉴已导入"); }
+    catch { alert("图鉴文件读取失败，请确认选择了正确的图鉴文件。"); }
   };
   reader.readAsText(f, "utf-8");
 });
@@ -644,13 +675,14 @@ async function handleInputFile(file) {
 
 async function loadZipFile(file) {
   if (typeof JSZip === "undefined") {
-    alert("压缩组件加载失败，请检查网络连接后刷新页面。");
+    alert("压缩包组件加载失败，请检查网络连接后刷新页面。");
     return;
   }
   try {
     currentZip = await JSZip.loadAsync(file);
     manifestName = "";
     manifestObj = null;
+
     for (const [name, entry] of Object.entries(currentZip.files)) {
       if (!entry.dir && name.endsWith(".json")) {
         try {
@@ -663,16 +695,18 @@ async function loadZipFile(file) {
         } catch {}
       }
     }
+
     if (!manifestObj || !currentZip.file("campaign.json")) {
-      alert("这不是有效的游戏存档压缩包，请确认选择的是游戏内导出的存档。");
+      alert("这不是有效的游戏导出存档压缩包，请确认选择正确的文件。");
       return;
     }
+
     saveData = JSON.parse(await currentZip.file("campaign.json").async("string"));
     isZipMode = true;
     saveBaseName = file.name.replace(/\.zip$/i, "");
     onSaveLoaded(file.size);
   } catch (err) {
-    alert("读取存档失败：" + err.message);
+    alert("读取存档压缩包失败：" + err.message);
   }
 }
 
@@ -681,7 +715,7 @@ function loadJsonFile(file) {
   reader.onload = () => {
     try {
       const obj = JSON.parse(reader.result);
-      if (!obj || typeof obj !== "object" || Array.isArray(obj)) throw new Error("格式无效");
+      if (!obj || typeof obj !== "object" || Array.isArray(obj)) throw new Error();
       saveData = obj;
       isZipMode = false;
       currentZip = null;
@@ -689,7 +723,7 @@ function loadJsonFile(file) {
       saveBaseName = file.name.replace(/\.json$/i, "");
       onSaveLoaded(file.size);
     } catch {
-      alert("存档文件无法识别，请选择正确的游戏存档。");
+      alert("读取存档失败，请确认选择了有效的存档文件。");
     }
   };
   reader.readAsText(file, "utf-8");
@@ -700,6 +734,8 @@ function onSaveLoaded(sizeBytes) {
   document.getElementById("editorArea").classList.remove("hidden");
   document.getElementById("exportBtn").classList.remove("hidden");
   document.getElementById("fileMeta").textContent = `存档大小 ${(sizeBytes / 1024).toFixed(1)} KB`;
+  itemsShowAll = false;
+  rosterShowAll = false;
   markDirty(false);
   renderAll();
   setStatus("存档已加载，修改完成后点击右上角「保存并导出存档」即可。");
@@ -779,27 +815,38 @@ function quickSetBank(val) {
     if (el) el.value = val;
   }
   markDirty();
+  setStatus(val > 0 ? `已将通用持有素材全部设为 ${val.toLocaleString()}` : "已清空通用持有素材");
+}
+
+// 搜索相关度评分
+function matchScore(name, id, q) {
+  const nl = name.toLowerCase();
+  if (nl === q || id === q) return 0;
+  if (nl.startsWith(q)) return 1;
+  return 2;
 }
 
 // 3. 道具与装备
 function lookupItemName(id, itemType) {
   const s = String(id);
-  if (itemType === 22) return names.materia[s] || names.items[s] || `未知能力 #${id}`;
-  return names.items[s] || names.materia[s] || `未知道具 #${id}`;
+  if (itemType === 22) return names.materia[s] || names.items[s] || `未知能力 #${s}`;
+  return names.items[s] || names.materia[s] || `未知道具 #${s}`;
 }
 function lookupEquipName(id) {
   const s = String(id);
-  return names.equipment[s] || names.items[s] || `未知装备 #${id}`;
+  return names.equipment[s] || names.items[s] || `未知装备 #${s}`;
 }
 
 function renderItems() {
   const needle = document.getElementById("filterItems").value.trim().toLowerCase();
+  if (needle !== lastItemsFilter) { itemsShowAll = false; lastItemsFilter = needle; }
+
   const rows = [];
   const items = saveData?.inventory?.items || [];
   items.forEach((e, idx) => {
     const id = e.item_id ?? 0, type = e.item_type ?? 20, count = e.count ?? 0;
-    const name = lookupItemName(id, type);
     const typeLabel = type === 22 ? "能力" : "道具";
+    const name = lookupItemName(id, type);
     if (!needle || `${id} ${name} ${typeLabel}`.toLowerCase().includes(needle)) {
       rows.push({ sec: 0, idx, typeLabel, id, name, count });
     }
@@ -813,12 +860,16 @@ function renderItems() {
     }
   });
 
-  document.getElementById("itemsCount").textContent = `共 ${rows.length} 项` + (rows.length > 500 ? "（仅显示前 500 项，请用搜索筛选）" : "");
-  document.getElementById("itemsBody").innerHTML = rows.slice(0, 500).map(r => `
+  const visibleRows = itemsShowAll ? rows : rows.slice(0, 500);
+  document.getElementById("itemsCount").innerHTML = !itemsShowAll && rows.length > 500
+    ? `共 ${rows.length} 项（当前显示前 500 项，<a href="javascript:void(0)" style="color:var(--accent);" onclick="itemsShowAll=true;renderItems()">点击显示全部</a>）`
+    : `共 ${rows.length} 项`;
+
+  document.getElementById("itemsBody").innerHTML = visibleRows.map(r => `
     <tr>
       <td><span class="badge">${r.typeLabel}</span></td>
       <td>${escapeHtml(r.name)}</td>
-      <td><input type="number" value="${r.count}" style="width:110px;" onchange="updateItemCount(${r.sec}, ${r.idx}, this.value)"></td>
+      <td><input type="number" value="${r.count}" min="0" style="width:110px;" onchange="updateItemCount(${r.sec}, ${r.idx}, this.value)"></td>
       <td><button class="sm danger" onclick="deleteItem(${r.sec}, ${r.idx})">删除</button></td>
     </tr>`).join("");
 }
@@ -835,72 +886,110 @@ function deleteItem(sec, idx) {
 }
 
 function openAddItemModal() {
+  addItemTypeManual = false;
+  lastItemHits = [];
   document.getElementById("addItemSearch").value = "";
   document.getElementById("addItemHits").classList.add("hidden");
-  document.getElementById("addItemPicked").classList.add("hidden");
+  document.getElementById("pickedItemBanner").classList.add("hidden");
   document.getElementById("addItemId").value = "";
   document.getElementById("addItemCount").value = "1";
+  document.getElementById("addItemSection").value = "0";
+  document.getElementById("addItemType").value = "20";
   document.getElementById("modalAddItem").classList.remove("hidden");
+  setTimeout(() => document.getElementById("addItemSearch").focus(), 50);
+}
+function setAddItemCount(n) {
+  document.getElementById("addItemCount").value = String(n);
 }
 function searchItemDict() {
   const q = document.getElementById("addItemSearch").value.trim().toLowerCase();
   const box = document.getElementById("addItemHits");
   if (!q) { box.classList.add("hidden"); return; }
+
   const hits = [];
   const scan = (map, kind, label) => {
     for (const [id, name] of Object.entries(map)) {
-      if (hits.length >= 40) return;
-      if (name.toLowerCase().includes(q) || id.includes(q)) hits.push({ id, name, kind, label });
+      if (name.toLowerCase().includes(q) || id.includes(q)) {
+        hits.push({ id, name, kind, label, score: matchScore(name, id, q) });
+      }
     }
   };
   scan(names.items, "item", "道具");
   scan(names.materia, "materia", "能力");
   scan(names.equipment, "equipment", "装备");
-  if (!hits.length) { box.innerHTML = `<div class="hit-item muted">未找到相关物品</div>`; box.classList.remove("hidden"); return; }
-  box.innerHTML = hits.map(h => `
-    <div class="hit-item" onclick='pickItemHit(${JSON.stringify(h.id)}, ${JSON.stringify(h.kind)}, ${JSON.stringify(h.name)}, ${JSON.stringify(h.label)})'>
+
+  hits.sort((a, b) => a.score - b.score || a.name.length - b.name.length || b.id.localeCompare(a.id));
+  lastItemHits = hits;
+  renderItemHits(false);
+}
+function renderItemHits(showAll) {
+  const box = document.getElementById("addItemHits");
+  if (!lastItemHits.length) {
+    box.innerHTML = `<div class="hit-item muted">未找到相关物品</div>`;
+    box.classList.remove("hidden");
+    return;
+  }
+  const list = showAll ? lastItemHits : lastItemHits.slice(0, 80);
+  let html = list.map(h => `
+    <div class="hit-item" onclick="pickItemHit('${h.id}','${h.kind}','${escapeAttr(h.name)}','${h.label}')">
       <span>${escapeHtml(h.name)}</span>
-      <span class="badge">${h.label}</span>
+      <span class="badge">${h.label} · ${h.id}</span>
     </div>`).join("");
+
+  if (!showAll && lastItemHits.length > 80) {
+    html += `<div class="hit-item" style="justify-content:center; color:var(--accent); font-weight:600;" onclick="renderItemHits(true)">
+      还有 ${lastItemHits.length - 80} 条匹配结果，点击显示全部
+    </div>`;
+  }
+  box.innerHTML = html;
   box.classList.remove("hidden");
 }
 function pickItemHit(id, kind, name, label) {
-  const numId = Number(id);
-  document.getElementById("addItemId").value = numId;
+  addItemTypeManual = false;
+  document.getElementById("addItemId").value = id;
   if (kind === "equipment") {
     document.getElementById("addItemSection").value = "1";
   } else {
     document.getElementById("addItemSection").value = "0";
-    // 若背包里已有该物品，优先沿用存档中原有的 item_type
-    const existing = (saveData?.inventory?.items || []).find(e => e.item_id === numId);
-    const autoType = existing ? existing.item_type : (kind === "materia" ? 22 : 20);
-    document.getElementById("addItemType").value = autoType;
+    document.getElementById("addItemType").value = kind === "materia" ? "22" : "20";
   }
-  const picked = document.getElementById("addItemPicked");
-  picked.innerHTML = `已选择：<b>${escapeHtml(name)}</b> <span class="badge">${label}</span>`;
-  picked.classList.remove("hidden");
+  const banner = document.getElementById("pickedItemBanner");
+  banner.textContent = `已选择：${name}（${label}）`;
+  banner.classList.remove("hidden");
   document.getElementById("addItemHits").classList.add("hidden");
 }
 function submitAddItem() {
   const sec = Number(document.getElementById("addItemSection").value);
-  const type = Number(document.getElementById("addItemType").value) || 20;
+  const manualType = Number(document.getElementById("addItemType").value) || 20;
   const id = Number(document.getElementById("addItemId").value);
   const count = Number(document.getElementById("addItemCount").value);
-  if (!id || id <= 0 || count <= 0) return alert("请先搜索并选择一个物品，再填写有效数量。");
+  if (!id || id <= 0) return alert("请先搜索并点击选择要添加的物品");
+  if (count <= 0) return alert("添加数量必须大于 0");
+
   if (!saveData.inventory) saveData.inventory = {};
   const key = sec === 1 ? "equipment" : "items";
   if (!Array.isArray(saveData.inventory[key])) saveData.inventory[key] = [];
   const arr = saveData.inventory[key];
-  const existing = arr.find(e => e.item_id === id && (sec === 1 || e.item_type === type));
+
+  let existing = null;
+  if (sec === 1) {
+    existing = arr.find(e => e.item_id === id);
+  } else if (addItemTypeManual) {
+    existing = arr.find(e => e.item_id === id && e.item_type === manualType);
+  } else {
+    existing = arr.find(e => e.item_id === id);
+  }
+
   if (existing) {
     existing.count = (existing.count || 0) + count;
   } else {
-    arr.push(sec === 1 ? { item_id: id, count } : { item_type: type, item_id: id, count });
+    arr.push(sec === 1 ? { item_id: id, count } : { item_type: manualType, item_id: id, count });
   }
   markDirty();
   closeModal("modalAddItem");
   renderItems();
-  setStatus(`已添加 × ${count}`);
+  const displayName = sec === 1 ? lookupEquipName(id) : lookupItemName(id, existing ? existing.item_type : manualType);
+  setStatus(`已添加：${displayName} × ${count}`);
 }
 
 // 4. 兵员列表
@@ -914,68 +1003,92 @@ function nextInstanceId(roster) {
 }
 function renderRoster() {
   const needle = document.getElementById("filterRoster").value.trim().toLowerCase();
+  if (needle !== lastRosterFilter) { rosterShowAll = false; lastRosterFilter = needle; }
+
   const roster = saveData?.roster || [];
   const rows = [];
   roster.forEach((u, idx) => {
+    const inst = String(u.instance_id ?? "");
     const master = String(u.master_id ?? "");
     const name = names.units[master] || `未知兵员 #${master}`;
-    if (!needle || master.includes(needle) || name.toLowerCase().includes(needle)) {
-      rows.push({ idx, name, lv: u.level ?? 0, exp: u.exp ?? 0, lbLv: u.lb_level ?? 0, exLv: u.nv_ex_level ?? 0 });
+    if (!needle || inst.includes(needle) || master.includes(needle) || name.toLowerCase().includes(needle)) {
+      rows.push({ idx, name, lv: u.level ?? 0, exp: u.exp ?? 0, lbLv: u.lb_level ?? 1, exLv: u.nv_ex_level ?? 0 });
     }
   });
-  document.getElementById("rosterCount").textContent = `共 ${rows.length} / ${roster.length} 名兵员`;
-  document.getElementById("rosterBody").innerHTML = rows.slice(0, 500).map(r => `
+
+  const visibleRows = rosterShowAll ? rows : rows.slice(0, 500);
+  document.getElementById("rosterCount").innerHTML = !rosterShowAll && rows.length > 500
+    ? `共 ${rows.length} / ${roster.length} 名兵员（当前显示前 500 名，<a href="javascript:void(0)" style="color:var(--accent);" onclick="rosterShowAll=true;renderRoster()">点击显示全部</a>）`
+    : `共 ${rows.length} / ${roster.length} 名兵员`;
+
+  document.getElementById("rosterBody").innerHTML = visibleRows.map(r => `
     <tr>
       <td>${escapeHtml(r.name)}</td>
-      <td>${r.lv}</td>
-      <td>${r.exp.toLocaleString()}</td>
-      <td>${r.lbLv}</td>
+      <td>Lv.${r.lv}</td>
+      <td class="muted">${r.exp.toLocaleString()}</td>
+      <td>Lv.${r.lbLv}</td>
       <td>EX+${r.exLv}</td>
       <td>
-        <button class="sm" onclick="openEditUnit(${r.idx})">编辑</button>
+        <button class="sm" onclick="openEditUnit(${r.idx})">修改</button>
         <button class="sm" onclick="cloneUnit(${r.idx})">复制</button>
       </td>
     </tr>`).join("");
 }
 
 function openAddUnitModal() {
+  lastUnitHits = [];
   document.getElementById("addUnitSearch").value = "";
   document.getElementById("addUnitHits").classList.add("hidden");
-  document.getElementById("addUnitPicked").classList.add("hidden");
+  document.getElementById("pickedUnitBanner").classList.add("hidden");
   document.getElementById("addUnitMaster").value = "";
   document.getElementById("addUnitLevel").value = "1";
   document.getElementById("addUnitExp").value = "0";
-  document.getElementById("addUnitFav").checked = false;
+  document.getElementById("addUnitFav").checked = true;
   document.getElementById("modalAddUnit").classList.remove("hidden");
+  setTimeout(() => document.getElementById("addUnitSearch").focus(), 50);
 }
 function searchUnitDict() {
   const q = document.getElementById("addUnitSearch").value.trim().toLowerCase();
   const box = document.getElementById("addUnitHits");
   if (!q) { box.classList.add("hidden"); return; }
+
   const hits = [];
   for (const [id, name] of Object.entries(names.units)) {
     if (name.toLowerCase().includes(q) || id.includes(q)) {
-      const star = id.slice(-1);
-      hits.push({ id, name, star });
+      hits.push({ id, name, star: id.slice(-1), score: matchScore(name, id, q) });
     }
   }
-  // 按名称分组，同角色高星级排在前面
-  hits.sort((a, b) => a.name.localeCompare(b.name) || b.id.localeCompare(a.id));
-  const top = hits.slice(0, 100);
-  box.innerHTML = top.length
-    ? top.map(h => `
-        <div class="hit-item" onclick='pickUnitHit(${JSON.stringify(h.id)}, ${JSON.stringify(h.name + " (" + h.star + "★)")})'>
-          <span>${escapeHtml(h.name)}</span>
-          <span class="badge">${h.star}★ · ${h.id}</span>
-        </div>`).join("")
-    : `<div class="hit-item muted">未找到相关兵员</div>`;
+  hits.sort((a, b) => a.score - b.score || a.name.length - b.name.length || b.id.localeCompare(a.id));
+  lastUnitHits = hits;
+  renderUnitHits(false);
+}
+function renderUnitHits(showAll) {
+  const box = document.getElementById("addUnitHits");
+  if (!lastUnitHits.length) {
+    box.innerHTML = `<div class="hit-item muted">未找到相关兵员</div>`;
+    box.classList.remove("hidden");
+    return;
+  }
+  const list = showAll ? lastUnitHits : lastUnitHits.slice(0, 80);
+  let html = list.map(h => `
+    <div class="hit-item" onclick="pickUnitHit('${h.id}','${escapeAttr(h.name)} (${h.star}★)')">
+      <span>${escapeHtml(h.name)}</span>
+      <span class="badge">${h.star}★ · ${h.id}</span>
+    </div>`).join("");
+
+  if (!showAll && lastUnitHits.length > 80) {
+    html += `<div class="hit-item" style="justify-content:center; color:var(--accent); font-weight:600;" onclick="renderUnitHits(true)">
+      还有 ${lastUnitHits.length - 80} 条匹配结果，点击显示全部
+    </div>`;
+  }
+  box.innerHTML = html;
   box.classList.remove("hidden");
 }
 function pickUnitHit(id, name) {
   document.getElementById("addUnitMaster").value = id;
-  const picked = document.getElementById("addUnitPicked");
-  picked.innerHTML = `已选择兵员：<b>${escapeHtml(name)}</b>`;
-  picked.classList.remove("hidden");
+  const banner = document.getElementById("pickedUnitBanner");
+  banner.textContent = `已选择兵员：${name}`;
+  banner.classList.remove("hidden");
   document.getElementById("addUnitHits").classList.add("hidden");
 }
 function submitAddUnit() {
@@ -983,7 +1096,7 @@ function submitAddUnit() {
   const level = Number(document.getElementById("addUnitLevel").value) || 1;
   const exp = Number(document.getElementById("addUnitExp").value) || 0;
   const fav = document.getElementById("addUnitFav").checked;
-  if (!master || master <= 0) return alert("请先搜索并选择一名兵员。");
+  if (!master || master <= 0) return alert("请先搜索并点击选择要新增的兵员");
   if (!Array.isArray(saveData.roster)) saveData.roster = [];
   const tpl = saveData.roster[0] ? JSON.parse(JSON.stringify(saveData.roster[0])) : {};
   const inst = nextInstanceId(saveData.roster);
@@ -1006,8 +1119,8 @@ function submitAddUnit() {
 
 function openEditUnit(idx) {
   const u = saveData.roster[idx];
-  const name = names.units[String(u.master_id)] || "兵员";
-  document.getElementById("editUnitTitle").textContent = `编辑兵员：${name}`;
+  const name = names.units[String(u.master_id)] || `兵员 ${u.master_id}`;
+  document.getElementById("editUnitTitle").textContent = `修改兵员：${name}`;
   document.getElementById("editUnitIdx").value = idx;
   document.getElementById("editUnitLevel").value = u.level ?? 1;
   document.getElementById("editUnitExp").value = u.exp ?? 0;
@@ -1019,18 +1132,18 @@ function openEditUnit(idx) {
 function submitEditUnit() {
   const idx = Number(document.getElementById("editUnitIdx").value);
   const u = saveData.roster[idx];
-  u.level = Number(document.getElementById("editUnitLevel").value) || 1;
-  u.exp = Number(document.getElementById("editUnitExp").value) || 0;
-  u.lb_level = Number(document.getElementById("editUnitLbLv").value) || 1;
-  u.lb_exp = Number(document.getElementById("editUnitLbExp").value) || 0;
-  u.nv_ex_level = Number(document.getElementById("editUnitExLv").value) || 0;
+  u.level = Math.max(1, Number(document.getElementById("editUnitLevel").value) || 1);
+  u.exp = Math.max(0, Number(document.getElementById("editUnitExp").value) || 0);
+  u.lb_level = Math.max(1, Number(document.getElementById("editUnitLbLv").value) || 1);
+  u.lb_exp = Math.max(0, Number(document.getElementById("editUnitLbExp").value) || 0);
+  u.nv_ex_level = Math.max(0, Number(document.getElementById("editUnitExLv").value) || 0);
   markDirty();
   closeModal("modalEditUnit");
   renderRoster();
-  setStatus("兵员属性已更新");
+  setStatus(`已更新兵员：${names.units[String(u.master_id)] || u.master_id}`);
 }
 function cloneUnit(idx) {
-  const copyGear = confirm("是否连同当前装备、能力与幻兵卡一起复制？\n（点「取消」仅复制兵员本身，推荐）");
+  const copyGear = confirm("是否连同装备、能力与幻兵卡一起复制？\n（点「取消」仅复制兵员本身并卸下装备，推荐）");
   const clone = JSON.parse(JSON.stringify(saveData.roster[idx]));
   const inst = nextInstanceId(saveData.roster);
   clone.instance_id = String(inst);
@@ -1046,7 +1159,7 @@ function cloneUnit(idx) {
   if (saveData.counts) saveData.counts.unit = saveData.roster.length;
   markDirty();
   renderRoster();
-  setStatus("已复制一名相同兵员");
+  setStatus(`已复制兵员：${names.units[String(clone.master_id)] || clone.master_id}`);
 }
 
 // 5. 高级数据
@@ -1090,11 +1203,11 @@ async function exportSave() {
     const blob = await currentZip.generateAsync({ type: "blob", compression: "DEFLATE" });
 
     triggerDownload(blob, `${saveBaseName}_edited.zip`, fallbackLink);
-    setStatus("存档已打包完成并自动修复校验，可直接导回游戏使用。");
+    setStatus("存档已修复校验并导出，可直接导回游戏使用！");
   } else {
     const blob = new Blob([JSON.stringify(saveData, null, 2) + "\n"], { type: "application/json" });
     triggerDownload(blob, `${saveBaseName}_edited.json`, fallbackLink);
-    setStatus("存档已导出完成。");
+    setStatus("存档已导出！");
   }
   markDirty(false);
 }
@@ -1118,6 +1231,9 @@ function triggerDownload(blob, filename, fallbackLink) {
 function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+function escapeAttr(s) {
+  return String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
 }
 </script>
 </body>
