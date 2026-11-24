@@ -1,279 +1,1064 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Exvius Offline 存档修复与修改工具</title>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0f172a; color: #e2e8f0;
-      max-width: 680px; margin: 24px auto; padding: 0 16px;
-    }
-    .card {
-      background: #1e293b; border: 1px solid #334155;
-      border-radius: 12px; padding: 20px; margin-bottom: 16px;
-    }
-    h1 { font-size: 1.25rem; margin: 0 0 8px; }
-    p.sub { color: #94a3b8; font-size: 0.9rem; margin: 0 0 16px; }
-    .dropzone {
-      display: block;
-      border: 2px dashed #475569; border-radius: 10px;
-      padding: 28px 16px; text-align: center; cursor: pointer;
-      transition: border-color .2s, background .2s;
-    }
-    .dropzone:hover, .dropzone.drag { border-color: #38bdf8; background: #0f172a; }
-    input[type="file"] {
-      position: absolute; width: 1px; height: 1px;
-      opacity: 0; overflow: hidden; z-index: -1;
-    }
-    .grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-      margin-top: 12px;
-    }
-    label.field { display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; }
-    input[type="number"] {
-      width: 100%; padding: 8px 10px; border-radius: 6px;
-      border: 1px solid #475569; background: #0f172a; color: #f8fafc;
-      font-size: 0.95rem;
-    }
-    button {
-      width: 100%; margin-top: 16px; padding: 12px;
-      border: none; border-radius: 8px; font-size: 1rem; font-weight: 600;
-      background: #0284c7; color: #fff; cursor: pointer;
-    }
-    button:hover { background: #0369a1; }
-    .fallback-dl {
-      display: block; margin-top: 10px; padding: 10px;
-      text-align: center; border-radius: 8px;
-      background: #065f46; color: #ecfdf5;
-      text-decoration: none; font-size: 0.95rem; font-weight: 600;
-    }
-    pre {
-      background: #0f172a; padding: 12px; border-radius: 8px;
-      font-size: 0.8rem; color: #94a3b8; overflow-x: auto;
-      max-height: 220px; margin: 12px 0 0; white-space: pre-wrap;
-    }
-    .hidden { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FFBE 离线版 存档修改器</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  :root {
+    --bg: #12151c;
+    --panel: #1b202b;
+    --panel-alt: #232a38;
+    --border: #2e3748;
+    --text: #e6ebf5;
+    --muted: #8b97ad;
+    --accent: #4c8bf5;
+    --accent-hover: #3b78e7;
+    --green: #3fb950;
+    --amber: #d29922;
+    --red: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    padding-bottom: 42px;
+  }
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .brand { font-weight: 700; font-size: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--panel-alt);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .badge.ok { color: var(--green); border-color: rgba(63,185,80,.4); }
+  .badge.warn { color: var(--amber); border-color: rgba(210,153,34,.4); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button, .btn {
+    background: var(--panel-alt);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: .15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  button:hover, .btn:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: var(--accent-hover); }
+  .btn.green { background: #1f6f3b; border-color: #2ea043; color: #fff; font-weight: 600; }
+  button.danger { color: var(--red); }
+  button.danger:hover { border-color: var(--red); background: rgba(248,81,73,.1); }
+  button.sm { padding: 3px 8px; font-size: 12px; }
+  input[type="text"], input[type="number"], select, textarea {
+    background: #101319;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  .container { max-width: 1140px; margin: 0 auto; padding: 16px; }
+  .dropzone {
+    display: block;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 44px 20px;
+    text-align: center;
+    background: var(--panel);
+    margin: 24px 0;
+    cursor: pointer;
+    transition: .2s;
+  }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(76,139,245,.08); }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 8px 14px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h3 { margin: 0 0 8px 0; font-size: 15px; }
+  .grid-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  .quick-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .table-wrap { overflow-x: auto; max-height: 62vh; border: 1px solid var(--border); border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+  th { background: var(--panel-alt); position: sticky; top: 0; z-index: 5; color: var(--muted); font-weight: 600; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .status-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 7px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 20;
+  }
+  .hidden { display: none !important; }
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; padding: 16px;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 100%; max-width: 500px;
+    padding: 18px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 { margin: 0 0 12px 0; }
+  .search-hits {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 6px 0 12px 0;
+    background: #101319;
+  }
+  .hit-item {
+    padding: 7px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  .hit-item:hover { background: var(--panel-alt); }
+  .hit-item:last-child { border-bottom: none; }
+  .picked-box {
+    background: rgba(76,139,245,.12);
+    border: 1px solid rgba(76,139,245,.35);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 8px 0 12px 0;
+    font-size: 13px;
+  }
+  details.adv {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  details.adv summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+    user-select: none;
+  }
+  .muted { color: var(--muted); font-size: 12px; }
+</style>
 </head>
 <body>
-  <div class="card">
-    <h1>Exvius Offline 存档校验修复工具</h1>
-    <p class="sub">纯本地浏览器运行：自动重算 manifest.json 的 length 与 SHA-256，支持顺手修改基础货币。</p>
-    <label for="fileInput" id="dropzone" class="dropzone">
-      点击选择或拖入导出的存档 <b>.zip</b> 文件
-    </label>
-    <input type="file" id="fileInput" />
-  </div>
 
-  <div id="editorCard" class="card hidden">
-    <h1 style="font-size:1.05rem;">可选：快捷修改（不改可直接点下方修复）</h1>
-    <div class="grid">
-      <div>
-        <label class="field">免费宝石 (lapis_free)</label>
-        <input type="number" id="lapisFree" />
+<header>
+  <div class="brand">
+    <span>FFBE 离线版 存档修改器</span>
+    <span id="dictBadge" class="badge warn">图鉴加载中...</span>
+    <span id="dirtyBadge" class="badge warn hidden">● 有未保存的修改</span>
+  </div>
+  <div class="toolbar">
+    <input type="file" id="saveFileInput" accept=".zip,.json" class="hidden">
+    <input type="file" id="dictFileInput" accept=".json" class="hidden">
+    <button onclick="document.getElementById('saveFileInput').click()">打开存档</button>
+    <button id="manualDictBtn" class="hidden" onclick="document.getElementById('dictFileInput').click()">导入中文图鉴</button>
+    <button id="exportBtn" class="primary hidden" onclick="exportSave()">保存并导出存档</button>
+    <a id="fallbackLink" class="btn green hidden" href="#">未自动下载？点此保存</a>
+  </div>
+</header>
+
+<div class="container">
+  <label for="saveFileInput" id="dropzone" class="dropzone">
+    <h2 style="margin:0 0 8px 0; font-size:18px;">点击选择或拖入游戏导出的存档文件</h2>
+    <p class="muted" style="margin:0;">所有修改均在本地浏览器完成，不会上传任何数据。<br>
+    支持游戏内导出的存档压缩包（自动修复校验，改完可直接导回游戏）。</p>
+  </label>
+
+  <div id="editorArea" class="hidden">
+    <div class="tabs">
+      <div class="tab active" data-tab="currencies" onclick="switchTab('currencies')">货币与等级</div>
+      <div class="tab" data-tab="bank" onclick="switchTab('bank')">兵员强化池</div>
+      <div class="tab" data-tab="items" onclick="switchTab('items')">道具与装备</div>
+      <div class="tab" data-tab="roster" onclick="switchTab('roster')">兵员列表</div>
+      <div class="tab" data-tab="raw" onclick="switchTab('raw')">高级数据</div>
+    </div>
+
+    <!-- 1. 货币与等级 -->
+    <div id="tab-currencies" class="tab-panel">
+      <div class="card">
+        <h3>基础货币</h3>
+        <div class="grid-form" id="curGrid"></div>
+        <div class="quick-bar">
+          <button class="primary" onclick="quickSetAllCur(99999999)">全部设为 99,999,999</button>
+        </div>
       </div>
-      <div>
-        <label class="field">付费宝石 (lapis_paid)</label>
-        <input type="number" id="lapisPaid" />
-      </div>
-      <div>
-        <label class="field">金币 (gil)</label>
-        <input type="number" id="gil" />
-      </div>
-      <div>
-        <label class="field">友情点 (friend_point)</label>
-        <input type="number" id="friendPoint" />
+      <div class="card">
+        <h3>玩家等级与体力</h3>
+        <div class="grid-form" id="rankGrid"></div>
       </div>
     </div>
-    <button id="fixBtn">重新计算校验并下载修复后的存档</button>
-    <a id="fallbackLink" class="fallback-dl hidden" href="#">未自动下载？点此手动保存存档</a>
-    <pre id="log"></pre>
+
+    <!-- 2. 兵员强化池 -->
+    <div id="tab-bank" class="tab-panel hidden">
+      <div class="card">
+        <h3>强化兵员・通用持有素材</h3>
+        <p class="muted" style="margin:-4px 0 14px 0;">
+          对应游戏内「强化兵员」界面中不带「固定」标记的通用持有素材（EXP、LB 熟练度、各属性强化罐与六种门）。
+        </p>
+        <div class="grid-form" id="bankGrid"></div>
+        <div class="quick-bar">
+          <button class="primary" onclick="quickSetBank(99999999)">全部设为 99,999,999</button>
+          <button class="danger" onclick="quickSetBank(0)">全部归零</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 道具与装备 -->
+    <div id="tab-items" class="tab-panel hidden">
+      <div class="card">
+        <div class="filter-bar">
+          <input type="text" id="filterItems" placeholder="搜索道具、能力或装备名称..." style="width:260px;" oninput="renderItems()">
+          <button class="primary" onclick="openAddItemModal()">+ 添加道具 / 装备</button>
+          <span id="itemsCount" class="muted"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:85px;">分类</th>
+                <th>名称</th>
+                <th style="width:140px;">持有数量</th>
+                <th style="width:65px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 兵员列表 -->
+    <div id="tab-roster" class="tab-panel hidden">
+      <div class="card">
+        <div class="filter-bar">
+          <input type="text" id="filterRoster" placeholder="搜索兵员名称..." style="width:260px;" oninput="renderRoster()">
+          <button class="primary" onclick="openAddUnitModal()">+ 新增兵员</button>
+          <span id="rosterCount" class="muted"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>兵员名称</th>
+                <th style="width:75px;">等级</th>
+                <th style="width:110px;">经验</th>
+                <th style="width:90px;">极限技 Lv</th>
+                <th style="width:80px;">EX 觉醒</th>
+                <th style="width:130px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="rosterBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 高级数据 -->
+    <div id="tab-raw" class="tab-panel hidden">
+      <div class="card">
+        <div class="filter-bar">
+          <button class="primary" onclick="applyRawJson()">应用修改</button>
+          <button onclick="refreshRawJson()">重新读取</button>
+          <span class="muted">仅供进阶玩家直接编辑底层存档数据，普通玩家无需操作此页。</span>
+        </div>
+        <textarea id="rawTextarea" style="width:100%; height:56vh; font-family:Consolas,monospace; font-size:12px;"></textarea>
+      </div>
+    </div>
   </div>
+</div>
 
-  <script>
-    function sha256Hex(bytes) {
-      const K = new Uint32Array([
-        0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
-        0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
-        0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
-        0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
-        0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
-        0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
-        0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
-        0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
-      ]);
-      let H = new Uint32Array([
-        0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
-        0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
-      ]);
-      const bitLen = bytes.length * 8;
-      const paddedLen = Math.ceil((bytes.length + 9) / 64) * 64;
-      const buf = new Uint8Array(paddedLen);
-      buf.set(bytes);
-      buf[bytes.length] = 0x80;
-      const view = new DataView(buf.buffer);
-      view.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
-      view.setUint32(paddedLen - 4, bitLen >>> 0, false);
+<!-- 弹窗：添加道具/装备 -->
+<div id="modalAddItem" class="modal-bg hidden">
+  <div class="modal">
+    <h3>添加道具 / 能力 / 装备</h3>
+    <div class="field">
+      <label>搜索名称（输入中文或英文关键词）</label>
+      <input type="text" id="addItemSearch" placeholder="例如：召唤券、圣剑、魔石、觉醒..." oninput="searchItemDict()">
+    </div>
+    <div id="addItemHits" class="search-hits hidden"></div>
+    <div id="addItemPicked" class="picked-box hidden"></div>
+    <div class="field" style="margin-top:8px;">
+      <label>添加数量</label>
+      <input type="number" id="addItemCount" value="1" min="1">
+    </div>
+    <details class="adv">
+      <summary>高级选项（一般无需修改，系统已自动识别分类）</summary>
+      <div class="grid-form" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+        <div class="field">
+          <label>归属分类</label>
+          <select id="addItemSection">
+            <option value="0">道具 / 能力</option>
+            <option value="1">装备</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>内部类型值</label>
+          <input type="number" id="addItemType" value="20">
+        </div>
+        <div class="field">
+          <label>物品编号</label>
+          <input type="number" id="addItemId" placeholder="自动填入">
+        </div>
+      </div>
+    </details>
+    <div class="quick-bar" style="justify-content:flex-end; margin-top:16px;">
+      <button onclick="closeModal('modalAddItem')">取消</button>
+      <button class="primary" onclick="submitAddItem()">确认添加</button>
+    </div>
+  </div>
+</div>
 
-      const W = new Uint32Array(64);
-      const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+<!-- 弹窗：新增兵员 -->
+<div id="modalAddUnit" class="modal-bg hidden">
+  <div class="modal">
+    <h3>新增兵员</h3>
+    <div class="field">
+      <label>搜索兵员名称</label>
+      <input type="text" id="addUnitSearch" placeholder="输入兵员中文或英文名..." oninput="searchUnitDict()">
+    </div>
+    <div id="addUnitHits" class="search-hits hidden"></div>
+    <div id="addUnitPicked" class="picked-box hidden"></div>
+    <div class="grid-form" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+      <div class="field">
+        <label>初始等级</label>
+        <input type="number" id="addUnitLevel" value="1" min="1">
+      </div>
+      <div class="field" style="justify-content:center;">
+        <label style="flex-direction:row; align-items:center; gap:6px; cursor:pointer; color:var(--text);">
+          <input type="checkbox" id="addUnitFav"> 设为最爱（防止误卖/自动转化）
+        </label>
+      </div>
+    </div>
+    <details class="adv">
+      <summary>高级选项（手动指定兵员编号与经验）</summary>
+      <div class="grid-form" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+        <div class="field"><label>兵员编号</label><input type="number" id="addUnitMaster" placeholder="自动填入"></div>
+        <div class="field"><label>初始经验</label><input type="number" id="addUnitExp" value="0"></div>
+      </div>
+    </details>
+    <div class="quick-bar" style="justify-content:flex-end; margin-top:16px;">
+      <button onclick="closeModal('modalAddUnit')">取消</button>
+      <button class="primary" onclick="submitAddUnit()">确认新增</button>
+    </div>
+  </div>
+</div>
 
-      for (let off = 0; off < paddedLen; off += 64) {
-        for (let i = 0; i < 16; i++) W[i] = view.getUint32(off + i * 4, false);
-        for (let i = 16; i < 64; i++) {
-          const s0 = rotr(W[i-15], 7) ^ rotr(W[i-15], 18) ^ (W[i-15] >>> 3);
-          const s1 = rotr(W[i-2], 17) ^ rotr(W[i-2], 19) ^ (W[i-2] >>> 10);
-          W[i] = (W[i-16] + s0 + W[i-7] + s1) >>> 0;
-        }
-        let [a, b, c, d, e, f, g, h] = H;
-        for (let i = 0; i < 64; i++) {
-          const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
-          const ch = (e & f) ^ (~e & g);
-          const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
-          const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
-          const maj = (a & b) ^ (a & c) ^ (b & c);
-          const temp2 = (S0 + maj) >>> 0;
-          h = g; g = f; f = e; e = (d + temp1) >>> 0;
-          d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
-        }
-        H[0]=(H[0]+a)>>>0; H[1]=(H[1]+b)>>>0; H[2]=(H[2]+c)>>>0; H[3]=(H[3]+d)>>>0;
-        H[4]=(H[4]+e)>>>0; H[5]=(H[5]+f)>>>0; H[6]=(H[6]+g)>>>0; H[7]=(H[7]+h)>>>0;
-      }
-      return Array.from(H).map(x => x.toString(16).padStart(8, "0")).join("");
+<!-- 弹窗：编辑兵员 -->
+<div id="modalEditUnit" class="modal-bg hidden">
+  <div class="modal">
+    <h3 id="editUnitTitle">编辑兵员</h3>
+    <input type="hidden" id="editUnitIdx">
+    <div class="grid-form" style="grid-template-columns:1fr 1fr;">
+      <div class="field"><label>等级</label><input type="number" id="editUnitLevel"></div>
+      <div class="field"><label>当前经验</label><input type="number" id="editUnitExp"></div>
+      <div class="field"><label>极限技等级</label><input type="number" id="editUnitLbLv"></div>
+      <div class="field"><label>极限技经验</label><input type="number" id="editUnitLbExp"></div>
+      <div class="field"><label>EX 觉醒等级 (0~3)</label><input type="number" id="editUnitExLv"></div>
+    </div>
+    <div class="quick-bar" style="justify-content:flex-end; margin-top:16px;">
+      <button onclick="closeModal('modalEditUnit')">取消</button>
+      <button class="primary" onclick="submitEditUnit()">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="statusText">就绪：请选择游戏导出的存档文件</span>
+  <span id="fileMeta"></span>
+</div>
+
+<script>
+// 纯 JS SHA-256（兼容所有浏览器与离线环境）
+function sha256Hex(bytes) {
+  const K = new Uint32Array([
+    0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+  ]);
+  let H = new Uint32Array([
+    0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
+    0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
+  ]);
+  const bitLen = bytes.length * 8;
+  const paddedLen = Math.ceil((bytes.length + 9) / 64) * 64;
+  const buf = new Uint8Array(paddedLen);
+  buf.set(bytes);
+  buf[bytes.length] = 0x80;
+  const view = new DataView(buf.buffer);
+  view.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
+  view.setUint32(paddedLen - 4, bitLen >>> 0, false);
+
+  const W = new Uint32Array(64);
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+  for (let off = 0; off < paddedLen; off += 64) {
+    for (let i = 0; i < 16; i++) W[i] = view.getUint32(off + i * 4, false);
+    for (let i = 16; i < 64; i++) {
+      const s0 = rotr(W[i-15], 7) ^ rotr(W[i-15], 18) ^ (W[i-15] >>> 3);
+      const s1 = rotr(W[i-2], 17) ^ rotr(W[i-2], 19) ^ (W[i-2] >>> 10);
+      W[i] = (W[i-16] + s0 + W[i-7] + s1) >>> 0;
     }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const ch = (e & f) ^ (~e & g);
+      const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const temp2 = (S0 + maj) >>> 0;
+      h = g; g = f; f = e; e = (d + temp1) >>> 0;
+      d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+    }
+    H[0]=(H[0]+a)>>>0; H[1]=(H[1]+b)>>>0; H[2]=(H[2]+c)>>>0; H[3]=(H[3]+d)>>>0;
+    H[4]=(H[4]+e)>>>0; H[5]=(H[5]+f)>>>0; H[6]=(H[6]+g)>>>0; H[7]=(H[7]+h)>>>0;
+  }
+  return Array.from(H).map(x => x.toString(16).padStart(8, "0")).join("");
+}
 
-    let currentZip = null;
-    let currentFileName = "";
-    let manifestName = "";
-    let manifestObj = null;
-    let campaignObj = null;
-    let lastBlobUrl = null;
+const CUR_KEYS = [
+  ["lapis_free", "免费宝石"],
+  ["lapis_paid", "付费宝石"],
+  ["gil", "金币"],
+  ["friend_point", "友情点数"]
+];
+const RANK_KEYS = [
+  ["level", "玩家等级"],
+  ["exp", "当前等级经验"],
+  ["nrg", "当前体力"]
+];
+const BANK_LABELS = [
+  ["XeRVw3s2", "持有 EXP（等级UP）"],
+  ["jWS57HG3", "LB 熟练度（LB等级UP）"],
+  ["LD4UJaf0", "强化HP 素材（罐）"],
+  ["ui34MYgo", "强化MP 素材（罐）"],
+  ["5sNq90o6", "强化攻击 素材（罐）"],
+  ["0xgsDY9E", "强化防御 素材（罐）"],
+  ["VSL4Wj9z", "强化魔力 素材（罐）"],
+  ["y7Z5AmhC", "强化精神 素材（罐）"],
+  ["h5s68EtJ", "强化HP 素材（门）"],
+  ["eu2DXK4I", "强化MP 素材（门）"],
+  ["8RUQtk4i", "强化攻击 素材（门）"],
+  ["8cj19yhb", "强化防御 素材（门）"],
+  ["rjK5oB1H", "强化魔力 素材（门）"],
+  ["16NCtrGw", "强化精神 素材（门）"]
+];
 
-    const dropzone = document.getElementById("dropzone");
-    const fileInput = document.getElementById("fileInput");
-    const editorCard = document.getElementById("editorCard");
-    const fallbackLink = document.getElementById("fallbackLink");
-    const logEl = document.getElementById("log");
+let saveData = null;
+let saveBaseName = "save";
+let isZipMode = false;
+let currentZip = null;
+let manifestName = "";
+let manifestObj = null;
+let lastBlobUrl = null;
+let names = { items: {}, equipment: {}, materia: {}, units: {} };
 
-    const log = (msg) => { logEl.textContent += msg + "\n"; };
+// 自动读取同目录中文图鉴
+fetch("./names.json")
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(d => applyNames(d, "中文图鉴已自动加载"))
+  .catch(() => {
+    const badge = document.getElementById("dictBadge");
+    badge.textContent = "未加载中文图鉴";
+    badge.className = "badge warn";
+    document.getElementById("manualDictBtn").classList.remove("hidden");
+    setStatus("提示：本地直接打开时请点击右上角「导入中文图鉴」（在线访问会自动加载）。");
+  });
 
-    dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add("drag"); };
-    dropzone.ondragleave = () => dropzone.classList.remove("drag");
-    dropzone.ondrop = (e) => {
-      e.preventDefault(); dropzone.classList.remove("drag");
-      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-    };
-    fileInput.onchange = (e) => {
-      if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
-      fileInput.value = "";
-    };
+function applyNames(d, msg) {
+  names = {
+    items: d.items || {},
+    equipment: d.equipment || {},
+    materia: d.materia || {},
+    units: d.units || {}
+  };
+  const total = Object.keys(names.items).length + Object.keys(names.equipment).length +
+                Object.keys(names.materia).length + Object.keys(names.units).length;
+  const badge = document.getElementById("dictBadge");
+  badge.textContent = `中文图鉴已就绪 (${total.toLocaleString()} 条)`;
+  badge.className = "badge ok";
+  document.getElementById("manualDictBtn").classList.add("hidden");
+  setStatus(msg);
+  if (saveData) { renderItems(); renderRoster(); }
+}
 
-    async function handleFile(file) {
-      logEl.textContent = "";
-      fallbackLink.classList.add("hidden");
+function setStatus(msg) { document.getElementById("statusText").textContent = msg; }
+function markDirty(flag = true) {
+  document.getElementById("dirtyBadge").classList.toggle("hidden", !flag);
+}
 
-      if (typeof JSZip === "undefined") {
-        alert("JSZip 组件加载失败，请检查网络连接（需访问 jsdelivr CDN）后刷新页面。");
-        return;
-      }
+// 拖拽与文件选择
+const dropzone = document.getElementById("dropzone");
+dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("dragover"); });
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+dropzone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  if (e.dataTransfer.files[0]) handleInputFile(e.dataTransfer.files[0]);
+});
+document.getElementById("saveFileInput").addEventListener("change", e => {
+  if (e.target.files[0]) handleInputFile(e.target.files[0]);
+  e.target.value = "";
+});
+document.getElementById("dictFileInput").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { applyNames(JSON.parse(reader.result), "中文图鉴导入成功"); }
+    catch { alert("图鉴文件格式不正确，请重新选择。"); }
+  };
+  reader.readAsText(f, "utf-8");
+});
 
-      currentFileName = file.name.replace(/\.zip$/i, "");
-      try {
-        currentZip = await JSZip.loadAsync(file);
-        manifestName = "";
-        manifestObj = null;
+async function handleInputFile(file) {
+  document.getElementById("fallbackLink").classList.add("hidden");
+  if (file.name.toLowerCase().endsWith(".zip")) {
+    await loadZipFile(file);
+  } else {
+    loadJsonFile(file);
+  }
+}
 
-        for (const [name, entry] of Object.entries(currentZip.files)) {
-          if (!entry.dir && name.endsWith(".json")) {
-            try {
-              const txt = await entry.async("string");
-              const obj = JSON.parse(txt);
-              if (obj && obj.format === "exvius-save-1") {
-                manifestName = name;
-                manifestObj = obj;
-                break;
-              }
-            } catch {}
+async function loadZipFile(file) {
+  if (typeof JSZip === "undefined") {
+    alert("压缩组件加载失败，请检查网络连接后刷新页面。");
+    return;
+  }
+  try {
+    currentZip = await JSZip.loadAsync(file);
+    manifestName = "";
+    manifestObj = null;
+    for (const [name, entry] of Object.entries(currentZip.files)) {
+      if (!entry.dir && name.endsWith(".json")) {
+        try {
+          const obj = JSON.parse(await entry.async("string"));
+          if (obj && obj.format === "exvius-save-1") {
+            manifestName = name;
+            manifestObj = obj;
+            break;
           }
-        }
-
-        if (!manifestObj) {
-          alert("未在压缩包内找到 exvius-save-1 清单文件，请确认压缩包根目录是否正确。");
-          return;
-        }
-
-        if (currentZip.file("campaign.json")) {
-          const cText = await currentZip.file("campaign.json").async("string");
-          campaignObj = JSON.parse(cText);
-          const cur = campaignObj.currencies || {};
-          document.getElementById("lapisFree").value = cur.lapis_free ?? 0;
-          document.getElementById("lapisPaid").value = cur.lapis_paid ?? 0;
-          document.getElementById("gil").value = cur.gil ?? 0;
-          document.getElementById("friendPoint").value = cur.friend_point ?? 0;
-        }
-
-        editorCard.classList.remove("hidden");
-        log(`已加载: ${file.name} (清单: ${manifestName})`);
-      } catch (err) {
-        alert("读取 ZIP 失败: " + err.message);
+        } catch {}
       }
     }
+    if (!manifestObj || !currentZip.file("campaign.json")) {
+      alert("这不是有效的游戏存档压缩包，请确认选择的是游戏内导出的存档。");
+      return;
+    }
+    saveData = JSON.parse(await currentZip.file("campaign.json").async("string"));
+    isZipMode = true;
+    saveBaseName = file.name.replace(/\.zip$/i, "");
+    onSaveLoaded(file.size);
+  } catch (err) {
+    alert("读取存档失败：" + err.message);
+  }
+}
 
-    document.getElementById("fixBtn").onclick = async () => {
-      if (!currentZip || !manifestObj) return;
-      logEl.textContent = "开始处理...\n";
+function loadJsonFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(reader.result);
+      if (!obj || typeof obj !== "object" || Array.isArray(obj)) throw new Error("格式无效");
+      saveData = obj;
+      isZipMode = false;
+      currentZip = null;
+      manifestObj = null;
+      saveBaseName = file.name.replace(/\.json$/i, "");
+      onSaveLoaded(file.size);
+    } catch {
+      alert("存档文件无法识别，请选择正确的游戏存档。");
+    }
+  };
+  reader.readAsText(file, "utf-8");
+}
 
-      // 修正 JSZip 默认使用 UTC 导致东八区慢 8 小时的问题
-      const localDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+function onSaveLoaded(sizeBytes) {
+  document.getElementById("dropzone").classList.add("hidden");
+  document.getElementById("editorArea").classList.remove("hidden");
+  document.getElementById("exportBtn").classList.remove("hidden");
+  document.getElementById("fileMeta").textContent = `存档大小 ${(sizeBytes / 1024).toFixed(1)} KB`;
+  markDirty(false);
+  renderAll();
+  setStatus("存档已加载，修改完成后点击右上角「保存并导出存档」即可。");
+}
 
-      if (campaignObj) {
-        campaignObj.currencies = campaignObj.currencies || {};
-        campaignObj.currencies.lapis_free = Number(document.getElementById("lapisFree").value) || 0;
-        campaignObj.currencies.lapis_paid = Number(document.getElementById("lapisPaid").value) || 0;
-        campaignObj.currencies.gil = Number(document.getElementById("gil").value) || 0;
-        campaignObj.currencies.friend_point = Number(document.getElementById("friendPoint").value) || 0;
-        currentZip.file("campaign.json", JSON.stringify(campaignObj, null, 1), { date: localDate });
-      }
+function getPath(obj, path, def = 0) {
+  let cur = obj;
+  for (const k of path) {
+    if (cur == null || typeof cur !== "object") return def;
+    cur = cur[k];
+  }
+  return cur ?? def;
+}
+function setPath(obj, path, val) {
+  let cur = obj;
+  for (let i = 0; i < path.length - 1; i++) {
+    const k = path[i];
+    if (!cur[k] || typeof cur[k] !== "object") cur[k] = {};
+    cur = cur[k];
+  }
+  cur[path[path.length - 1]] = val;
+}
 
-      const entries = manifestObj.entries || {};
-      for (const [entryPath, meta] of Object.entries(entries)) {
-        if (meta === null) continue;
-        const zFile = currentZip.file(entryPath);
-        if (!zFile) {
-          log(`警告: 压缩包内缺少 ${entryPath}`);
-          continue;
-        }
-        const bytes = await zFile.async("uint8array");
-        meta.length = bytes.length;
-        meta.sha256 = sha256Hex(bytes);
-        log(`已更新: ${entryPath} -> length=${meta.length}, sha256=${meta.sha256.slice(0, 12)}...`);
-      }
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("hidden", p.id !== "tab-" + name));
+  if (name === "raw") refreshRawJson();
+}
 
-      currentZip.file(manifestName, JSON.stringify(manifestObj), { date: localDate });
+function renderAll() {
+  renderCurrencies();
+  renderBank();
+  renderItems();
+  renderRoster();
+  refreshRawJson();
+}
 
-      const blob = await currentZip.generateAsync({ type: "blob", compression: "DEFLATE" });
-      if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-      lastBlobUrl = URL.createObjectURL(blob);
+// 1. 货币与等级
+function renderCurrencies() {
+  document.getElementById("curGrid").innerHTML = CUR_KEYS.map(([k, label]) => `
+    <div class="field">
+      <label>${label}</label>
+      <input type="number" id="cur_${k}" value="${getPath(saveData, ["currencies", k], 0)}"
+             onchange="setPath(saveData, ['currencies', '${k}'], Number(this.value)||0); markDirty();">
+    </div>`).join("");
 
-      const outName = `${currentFileName}_fixed.zip`;
-      fallbackLink.href = lastBlobUrl;
-      fallbackLink.download = outName;
-      fallbackLink.classList.remove("hidden");
+  document.getElementById("rankGrid").innerHTML = RANK_KEYS.map(([k, label]) => `
+    <div class="field">
+      <label>${label}</label>
+      <input type="number" id="rank_${k}" value="${getPath(saveData, ["rank", k], 0)}"
+             onchange="setPath(saveData, ['rank', '${k}'], Number(this.value)||0); markDirty();">
+    </div>`).join("");
+}
+function quickSetAllCur(val) {
+  for (const [k] of CUR_KEYS) {
+    setPath(saveData, ["currencies", k], val);
+    const el = document.getElementById("cur_" + k);
+    if (el) el.value = val;
+  }
+  markDirty();
+  setStatus(`已将全部基础货币设为 ${val.toLocaleString()}`);
+}
 
-      const a = document.createElement("a");
-      a.href = lastBlobUrl;
-      a.download = outName;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+// 2. 兵员强化池
+function renderBank() {
+  document.getElementById("bankGrid").innerHTML = BANK_LABELS.map(([tok, label]) => `
+    <div class="field">
+      <label>${label}</label>
+      <input type="number" id="bank_${tok}" value="${getPath(saveData, ["exvius_unit_points", "banks", "0", tok], 0)}"
+             onchange="setPath(saveData, ['exvius_unit_points', 'banks', '0', '${tok}'], Number(this.value)||0); markDirty();">
+    </div>`).join("");
+}
+function quickSetBank(val) {
+  for (const [tok] of BANK_LABELS) {
+    setPath(saveData, ["exvius_unit_points", "banks", "0", tok], val);
+    const el = document.getElementById("bank_" + tok);
+    if (el) el.value = val;
+  }
+  markDirty();
+}
 
-      log("\n完成！如未自动开始下载，请点击上方绿色按钮手动保存。");
-    };
-  </script>
+// 3. 道具与装备
+function lookupItemName(id, itemType) {
+  const s = String(id);
+  if (itemType === 22) return names.materia[s] || names.items[s] || `未知能力 #${id}`;
+  return names.items[s] || names.materia[s] || `未知道具 #${id}`;
+}
+function lookupEquipName(id) {
+  const s = String(id);
+  return names.equipment[s] || names.items[s] || `未知装备 #${id}`;
+}
+
+function renderItems() {
+  const needle = document.getElementById("filterItems").value.trim().toLowerCase();
+  const rows = [];
+  const items = saveData?.inventory?.items || [];
+  items.forEach((e, idx) => {
+    const id = e.item_id ?? 0, type = e.item_type ?? 20, count = e.count ?? 0;
+    const name = lookupItemName(id, type);
+    const typeLabel = type === 22 ? "能力" : "道具";
+    if (!needle || `${id} ${name} ${typeLabel}`.toLowerCase().includes(needle)) {
+      rows.push({ sec: 0, idx, typeLabel, id, name, count });
+    }
+  });
+  const eq = saveData?.inventory?.equipment || [];
+  eq.forEach((e, idx) => {
+    const id = e.item_id ?? 0, count = e.count ?? 0;
+    const name = lookupEquipName(id);
+    if (!needle || `${id} ${name} 装备`.toLowerCase().includes(needle)) {
+      rows.push({ sec: 1, idx, typeLabel: "装备", id, name, count });
+    }
+  });
+
+  document.getElementById("itemsCount").textContent = `共 ${rows.length} 项` + (rows.length > 500 ? "（仅显示前 500 项，请用搜索筛选）" : "");
+  document.getElementById("itemsBody").innerHTML = rows.slice(0, 500).map(r => `
+    <tr>
+      <td><span class="badge">${r.typeLabel}</span></td>
+      <td>${escapeHtml(r.name)}</td>
+      <td><input type="number" value="${r.count}" style="width:110px;" onchange="updateItemCount(${r.sec}, ${r.idx}, this.value)"></td>
+      <td><button class="sm danger" onclick="deleteItem(${r.sec}, ${r.idx})">删除</button></td>
+    </tr>`).join("");
+}
+function updateItemCount(sec, idx, val) {
+  const arr = sec === 1 ? saveData.inventory.equipment : saveData.inventory.items;
+  arr[idx].count = Math.max(0, Number(val) || 0);
+  markDirty();
+}
+function deleteItem(sec, idx) {
+  const arr = sec === 1 ? saveData.inventory.equipment : saveData.inventory.items;
+  arr.splice(idx, 1);
+  markDirty();
+  renderItems();
+}
+
+function openAddItemModal() {
+  document.getElementById("addItemSearch").value = "";
+  document.getElementById("addItemHits").classList.add("hidden");
+  document.getElementById("addItemPicked").classList.add("hidden");
+  document.getElementById("addItemId").value = "";
+  document.getElementById("addItemCount").value = "1";
+  document.getElementById("modalAddItem").classList.remove("hidden");
+}
+function searchItemDict() {
+  const q = document.getElementById("addItemSearch").value.trim().toLowerCase();
+  const box = document.getElementById("addItemHits");
+  if (!q) { box.classList.add("hidden"); return; }
+  const hits = [];
+  const scan = (map, kind, label) => {
+    for (const [id, name] of Object.entries(map)) {
+      if (hits.length >= 40) return;
+      if (name.toLowerCase().includes(q) || id.includes(q)) hits.push({ id, name, kind, label });
+    }
+  };
+  scan(names.items, "item", "道具");
+  scan(names.materia, "materia", "能力");
+  scan(names.equipment, "equipment", "装备");
+  if (!hits.length) { box.innerHTML = `<div class="hit-item muted">未找到相关物品</div>`; box.classList.remove("hidden"); return; }
+  box.innerHTML = hits.map(h => `
+    <div class="hit-item" onclick='pickItemHit(${JSON.stringify(h.id)}, ${JSON.stringify(h.kind)}, ${JSON.stringify(h.name)}, ${JSON.stringify(h.label)})'>
+      <span>${escapeHtml(h.name)}</span>
+      <span class="badge">${h.label}</span>
+    </div>`).join("");
+  box.classList.remove("hidden");
+}
+function pickItemHit(id, kind, name, label) {
+  const numId = Number(id);
+  document.getElementById("addItemId").value = numId;
+  if (kind === "equipment") {
+    document.getElementById("addItemSection").value = "1";
+  } else {
+    document.getElementById("addItemSection").value = "0";
+    // 若背包里已有该物品，优先沿用存档中原有的 item_type
+    const existing = (saveData?.inventory?.items || []).find(e => e.item_id === numId);
+    const autoType = existing ? existing.item_type : (kind === "materia" ? 22 : 20);
+    document.getElementById("addItemType").value = autoType;
+  }
+  const picked = document.getElementById("addItemPicked");
+  picked.innerHTML = `已选择：<b>${escapeHtml(name)}</b> <span class="badge">${label}</span>`;
+  picked.classList.remove("hidden");
+  document.getElementById("addItemHits").classList.add("hidden");
+}
+function submitAddItem() {
+  const sec = Number(document.getElementById("addItemSection").value);
+  const type = Number(document.getElementById("addItemType").value) || 20;
+  const id = Number(document.getElementById("addItemId").value);
+  const count = Number(document.getElementById("addItemCount").value);
+  if (!id || id <= 0 || count <= 0) return alert("请先搜索并选择一个物品，再填写有效数量。");
+  if (!saveData.inventory) saveData.inventory = {};
+  const key = sec === 1 ? "equipment" : "items";
+  if (!Array.isArray(saveData.inventory[key])) saveData.inventory[key] = [];
+  const arr = saveData.inventory[key];
+  const existing = arr.find(e => e.item_id === id && (sec === 1 || e.item_type === type));
+  if (existing) {
+    existing.count = (existing.count || 0) + count;
+  } else {
+    arr.push(sec === 1 ? { item_id: id, count } : { item_type: type, item_id: id, count });
+  }
+  markDirty();
+  closeModal("modalAddItem");
+  renderItems();
+  setStatus(`已添加 × ${count}`);
+}
+
+// 4. 兵员列表
+function nextInstanceId(roster) {
+  let max = 0;
+  for (const u of roster) {
+    const n = Number(u.instance_id) || 0;
+    if (n > max) max = n;
+  }
+  return max + 1;
+}
+function renderRoster() {
+  const needle = document.getElementById("filterRoster").value.trim().toLowerCase();
+  const roster = saveData?.roster || [];
+  const rows = [];
+  roster.forEach((u, idx) => {
+    const master = String(u.master_id ?? "");
+    const name = names.units[master] || `未知兵员 #${master}`;
+    if (!needle || master.includes(needle) || name.toLowerCase().includes(needle)) {
+      rows.push({ idx, name, lv: u.level ?? 0, exp: u.exp ?? 0, lbLv: u.lb_level ?? 0, exLv: u.nv_ex_level ?? 0 });
+    }
+  });
+  document.getElementById("rosterCount").textContent = `共 ${rows.length} / ${roster.length} 名兵员`;
+  document.getElementById("rosterBody").innerHTML = rows.slice(0, 500).map(r => `
+    <tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${r.lv}</td>
+      <td>${r.exp.toLocaleString()}</td>
+      <td>${r.lbLv}</td>
+      <td>EX+${r.exLv}</td>
+      <td>
+        <button class="sm" onclick="openEditUnit(${r.idx})">编辑</button>
+        <button class="sm" onclick="cloneUnit(${r.idx})">复制</button>
+      </td>
+    </tr>`).join("");
+}
+
+function openAddUnitModal() {
+  document.getElementById("addUnitSearch").value = "";
+  document.getElementById("addUnitHits").classList.add("hidden");
+  document.getElementById("addUnitPicked").classList.add("hidden");
+  document.getElementById("addUnitMaster").value = "";
+  document.getElementById("addUnitLevel").value = "1";
+  document.getElementById("addUnitExp").value = "0";
+  document.getElementById("addUnitFav").checked = false;
+  document.getElementById("modalAddUnit").classList.remove("hidden");
+}
+function searchUnitDict() {
+  const q = document.getElementById("addUnitSearch").value.trim().toLowerCase();
+  const box = document.getElementById("addUnitHits");
+  if (!q) { box.classList.add("hidden"); return; }
+  const hits = [];
+  for (const [id, name] of Object.entries(names.units)) {
+    if (hits.length >= 40) break;
+    if (name.toLowerCase().includes(q) || id.includes(q)) hits.push({ id, name });
+  }
+  box.innerHTML = hits.length
+    ? hits.map(h => `<div class="hit-item" onclick='pickUnitHit(${JSON.stringify(h.id)}, ${JSON.stringify(h.name)})'><span>${escapeHtml(h.name)}</span></div>`).join("")
+    : `<div class="hit-item muted">未找到相关兵员</div>`;
+  box.classList.remove("hidden");
+}
+function pickUnitHit(id, name) {
+  document.getElementById("addUnitMaster").value = id;
+  const picked = document.getElementById("addUnitPicked");
+  picked.innerHTML = `已选择兵员：<b>${escapeHtml(name)}</b>`;
+  picked.classList.remove("hidden");
+  document.getElementById("addUnitHits").classList.add("hidden");
+}
+function submitAddUnit() {
+  const master = Number(document.getElementById("addUnitMaster").value);
+  const level = Number(document.getElementById("addUnitLevel").value) || 1;
+  const exp = Number(document.getElementById("addUnitExp").value) || 0;
+  const fav = document.getElementById("addUnitFav").checked;
+  if (!master || master <= 0) return alert("请先搜索并选择一名兵员。");
+  if (!Array.isArray(saveData.roster)) saveData.roster = [];
+  const tpl = saveData.roster[0] ? JSON.parse(JSON.stringify(saveData.roster[0])) : {};
+  const inst = nextInstanceId(saveData.roster);
+  Object.assign(tpl, {
+    instance_id: String(inst),
+    master_id: String(master),
+    level, exp, total_exp: 0, lb_exp: 0, nv_ex_level: 0,
+    guest: 0, storage_state: 0, favourite: fav ? 1 : 0,
+    granted_rarity: null, first_get_unit_id: null, lb_level: 1,
+    equipment: {"1":"0","2":"0","3":"0","4":"0","5":"0","6":"0"},
+    materia: ["0"], vision_card: "", affinity_points: ["",""], affinity_info: ["",""], skin_id: 0
+  });
+  saveData.roster.push(tpl);
+  if (saveData.counts) saveData.counts.unit = saveData.roster.length;
+  markDirty();
+  closeModal("modalAddUnit");
+  renderRoster();
+  setStatus(`已新增兵员：${names.units[String(master)] || master}`);
+}
+
+function openEditUnit(idx) {
+  const u = saveData.roster[idx];
+  const name = names.units[String(u.master_id)] || "兵员";
+  document.getElementById("editUnitTitle").textContent = `编辑兵员：${name}`;
+  document.getElementById("editUnitIdx").value = idx;
+  document.getElementById("editUnitLevel").value = u.level ?? 1;
+  document.getElementById("editUnitExp").value = u.exp ?? 0;
+  document.getElementById("editUnitLbLv").value = u.lb_level ?? 1;
+  document.getElementById("editUnitLbExp").value = u.lb_exp ?? 0;
+  document.getElementById("editUnitExLv").value = u.nv_ex_level ?? 0;
+  document.getElementById("modalEditUnit").classList.remove("hidden");
+}
+function submitEditUnit() {
+  const idx = Number(document.getElementById("editUnitIdx").value);
+  const u = saveData.roster[idx];
+  u.level = Number(document.getElementById("editUnitLevel").value) || 1;
+  u.exp = Number(document.getElementById("editUnitExp").value) || 0;
+  u.lb_level = Number(document.getElementById("editUnitLbLv").value) || 1;
+  u.lb_exp = Number(document.getElementById("editUnitLbExp").value) || 0;
+  u.nv_ex_level = Number(document.getElementById("editUnitExLv").value) || 0;
+  markDirty();
+  closeModal("modalEditUnit");
+  renderRoster();
+  setStatus("兵员属性已更新");
+}
+function cloneUnit(idx) {
+  const copyGear = confirm("是否连同当前装备、能力与幻兵卡一起复制？\n（点「取消」仅复制兵员本身，推荐）");
+  const clone = JSON.parse(JSON.stringify(saveData.roster[idx]));
+  const inst = nextInstanceId(saveData.roster);
+  clone.instance_id = String(inst);
+  clone.guest = 0;
+  clone.storage_state = 0;
+  if (!copyGear) {
+    clone.equipment = {"1":"0","2":"0","3":"0","4":"0","5":"0","6":"0"};
+    clone.materia = ["0"];
+    clone.vision_card = "";
+    clone.skin_id = 0;
+  }
+  saveData.roster.push(clone);
+  if (saveData.counts) saveData.counts.unit = saveData.roster.length;
+  markDirty();
+  renderRoster();
+  setStatus("已复制一名相同兵员");
+}
+
+// 5. 高级数据
+function refreshRawJson() {
+  if (saveData) document.getElementById("rawTextarea").value = JSON.stringify(saveData, null, 2);
+}
+function applyRawJson() {
+  try {
+    const parsed = JSON.parse(document.getElementById("rawTextarea").value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+    saveData = parsed;
+    markDirty();
+    renderAll();
+    setStatus("高级数据已应用");
+  } catch {
+    alert("数据格式有误，请检查括号与逗号是否匹配。");
+  }
+}
+
+// 导出存档
+async function exportSave() {
+  if (!saveData) return;
+  const fallbackLink = document.getElementById("fallbackLink");
+
+  if (isZipMode && currentZip && manifestObj) {
+    setStatus("正在重新计算校验并打包存档...");
+    const localDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+    currentZip.file("campaign.json", JSON.stringify(saveData, null, 1), { date: localDate });
+
+    const entries = manifestObj.entries || {};
+    for (const [entryPath, meta] of Object.entries(entries)) {
+      if (meta === null) continue;
+      const zFile = currentZip.file(entryPath);
+      if (!zFile) continue;
+      const bytes = await zFile.async("uint8array");
+      meta.length = bytes.length;
+      meta.sha256 = sha256Hex(bytes);
+    }
+
+    currentZip.file(manifestName, JSON.stringify(manifestObj), { date: localDate });
+    const blob = await currentZip.generateAsync({ type: "blob", compression: "DEFLATE" });
+
+    triggerDownload(blob, `${saveBaseName}_edited.zip`, fallbackLink);
+    setStatus("存档已打包完成并自动修复校验，可直接导回游戏使用。");
+  } else {
+    const blob = new Blob([JSON.stringify(saveData, null, 2) + "\n"], { type: "application/json" });
+    triggerDownload(blob, `${saveBaseName}_edited.json`, fallbackLink);
+    setStatus("存档已导出完成。");
+  }
+  markDirty(false);
+}
+
+function triggerDownload(blob, filename, fallbackLink) {
+  if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
+  lastBlobUrl = URL.createObjectURL(blob);
+  fallbackLink.href = lastBlobUrl;
+  fallbackLink.download = filename;
+  fallbackLink.classList.remove("hidden");
+
+  const a = document.createElement("a");
+  a.href = lastBlobUrl;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+</script>
 </body>
 </html>
