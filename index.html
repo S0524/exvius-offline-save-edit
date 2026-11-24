@@ -1,498 +1,279 @@
 <!DOCTYPE html>
-
 <html lang="zh-CN">
-
 <head>
-
-<meta charset="UTF-8" />
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<title>Exvius Offline 存档修复与修改工具</title>
-
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-
-<style>
-
-{ box-sizing: border-box; }
-body {
-
-font-family: system-ui, -apple-system, sans-serif;
-
-background: #0f172a; color: #e2e8f0;
-
-max-width: 680px; margin: 40px auto; padding: 0 16px;
-
-}
-
-.card {
-
-background: #1e293b; border: 1px solid #334155;
-
-border-radius: 12px; padding: 20px; margin-bottom: 16px;
-
-}
-
-h1 { font-size: 1.3rem; margin: 0 0 8px; }
-
-p.sub { color: #94a3b8; font-size: 0.9rem; margin: 0 0 16px; }
-
-.dropzone {
-
-border: 2px dashed #475569; border-radius: 10px;
-
-padding: 28px; text-align: center; cursor: pointer;
-
-transition: border-color .2s, background .2s;
-
-}
-
-.dropzone:hover, .dropzone.drag { border-color: #38bdf8; background: #0f172a; }
-
-input[type="file"] { display: none; }
-
-.grid {
-
-display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-
-margin-top: 12px;
-
-}
-
-label { display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; }
-
-input[type="number"] {
-
-width: 100%; padding: 8px 10px; border-radius: 6px;
-
-border: 1px solid #475569; background: #0f172a; color: #f8fafc;
-
-font-size: 0.95rem;
-
-}
-
-button {
-
-width: 100%; margin-top: 16px; padding: 12px;
-
-border: none; border-radius: 8px; font-size: 1rem; font-weight: 600;
-
-background: #0284c7; color: #fff; cursor: pointer;
-
-}
-
-button:hover { background: #0369a1; }
-
-button:disabled { background: #475569; cursor: not-allowed; }
-
-pre {
-
-background: #0f172a; padding: 12px; border-radius: 8px;
-
-font-size: 0.8rem; color: #94a3b8; overflow-x: auto;
-
-max-height: 220px; margin: 12px 0 0;
-
-}
-
-.hidden { display: none; }
-
-</style>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exvius Offline 存档修复与修改工具</title>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a; color: #e2e8f0;
+      max-width: 680px; margin: 24px auto; padding: 0 16px;
+    }
+    .card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 12px; padding: 20px; margin-bottom: 16px;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    p.sub { color: #94a3b8; font-size: 0.9rem; margin: 0 0 16px; }
+    .dropzone {
+      display: block;
+      border: 2px dashed #475569; border-radius: 10px;
+      padding: 28px 16px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .dropzone:hover, .dropzone.drag { border-color: #38bdf8; background: #0f172a; }
+    input[type="file"] {
+      position: absolute; width: 1px; height: 1px;
+      opacity: 0; overflow: hidden; z-index: -1;
+    }
+    .grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      margin-top: 12px;
+    }
+    label.field { display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; }
+    input[type="number"] {
+      width: 100%; padding: 8px 10px; border-radius: 6px;
+      border: 1px solid #475569; background: #0f172a; color: #f8fafc;
+      font-size: 0.95rem;
+    }
+    button {
+      width: 100%; margin-top: 16px; padding: 12px;
+      border: none; border-radius: 8px; font-size: 1rem; font-weight: 600;
+      background: #0284c7; color: #fff; cursor: pointer;
+    }
+    button:hover { background: #0369a1; }
+    .fallback-dl {
+      display: block; margin-top: 10px; padding: 10px;
+      text-align: center; border-radius: 8px;
+      background: #065f46; color: #ecfdf5;
+      text-decoration: none; font-size: 0.95rem; font-weight: 600;
+    }
+    pre {
+      background: #0f172a; padding: 12px; border-radius: 8px;
+      font-size: 0.8rem; color: #94a3b8; overflow-x: auto;
+      max-height: 220px; margin: 12px 0 0; white-space: pre-wrap;
+    }
+    .hidden { display: none; }
+  </style>
 </head>
-
 <body>
-
-<div class="card">
-
-<h1>Exvius Offline 存档校验修复工具</h1>
-
-<p class="sub">纯本地浏览器运行：自动重算 manifest.json 的 length 与 SHA-256，支持顺手修改基础货币。</p>
-
-<div id="dropzone" class="dropzone">
-
-点击选择或拖入导出的存档 <b>.zip</b> 文件
-
-<input type="file" id="fileInput" accept=".zip" />
-
-</div>
-
-</div>
-
-
-
-<div id="editorCard" class="card hidden">
-
-<h1 style="font-size:1.05rem;">可选：快捷修改（不改可直接点下方修复）</h1>
-
-<div class="grid">
-
-<div>
-
-<label>免费宝石 (lapis_free)</label>
-
-<input type="number" id="lapisFree" />
-
-</div>
-
-<div>
-
-<label>付费宝石 (lapis_paid)</label>
-
-<input type="number" id="lapisPaid" />
-
-</div>
-
-<div>
-
-<label>金币 (gil)</label>
-
-<input type="number" id="gil" />
-
-</div>
-
-<div>
-
-<label>友情点 (friend_point)</label>
-
-<input type="number" id="friendPoint" />
-
-</div>
-
-</div>
-
-<button id="fixBtn">重新计算校验并下载修复后的存档</button>
-
-<pre id="log"></pre>
-
-</div>
-
-
-
-<script>
-
-// 纯 JS SHA-256（兼容 file:// 本地直接打开，不依赖 HTTPS）
-
-function sha256Hex(bytes) {
-
-const K = new Uint32Array([
-
-0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
-
-0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
-
-0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
-
-0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
-
-0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
-
-0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
-
-0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
-
-0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
-
-]);
-
-let H = new Uint32Array([
-
-0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
-
-0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
-
-]);
-
-const bitLen = bytes.length * 8;
-
-const paddedLen = Math.ceil((bytes.length + 9) / 64) * 64;
-
-const buf = new Uint8Array(paddedLen);
-
-buf.set(bytes);
-
-buf[bytes.length] = 0x80;
-
-const view = new DataView(buf.buffer);
-
-view.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
-
-view.setUint32(paddedLen - 4, bitLen >>> 0, false);
-
-
-
-const W = new Uint32Array(64);
-
-const rotr = (x, n) => (x >>> n) | (x << (32 - n));
-
-
-
-for (let off = 0; off < paddedLen; off += 64) {
-
-for (let i = 0; i < 16; i++) W[i] = view.getUint32(off + i * 4, false);
-
-for (let i = 16; i < 64; i++) {
-
-const s0 = rotr(W[i-15], 7) ^ rotr(W[i-15], 18) ^ (W[i-15] >>> 3);
-
-const s1 = rotr(W[i-2], 17) ^ rotr(W[i-2], 19) ^ (W[i-2] >>> 10);
-
-W[i] = (W[i-16] + s0 + W[i-7] + s1) >>> 0;
-
-}
-
-let [a, b, c, d, e, f, g, h] = H;
-
-for (let i = 0; i < 64; i++) {
-
-const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
-
-const ch = (e & f) ^ (~e & g);
-
-const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
-
-const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
-
-const maj = (a & b) ^ (a & c) ^ (b & c);
-
-const temp2 = (S0 + maj) >>> 0;
-
-h = g; g = f; f = e; e = (d + temp1) >>> 0;
-
-d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
-
-}
-
-H[0]=(H[0]+a)>>>0; H[1]=(H[1]+b)>>>0; H[2]=(H[2]+c)>>>0; H[3]=(H[3]+d)>>>0;
-
-H[4]=(H[4]+e)>>>0; H[5]=(H[5]+f)>>>0; H[6]=(H[6]+g)>>>0; H[7]=(H[7]+h)>>>0;
-
-}
-
-return Array.from(H).map(x => x.toString(16).padStart(8, "0")).join("");
-
-}
-
-
-
-let currentZip = null;
-
-let currentFileName = "";
-
-let manifestName = "";
-
-let manifestObj = null;
-
-let campaignObj = null;
-
-
-
-const dropzone = document.getElementById("dropzone");
-
-const fileInput = document.getElementById("fileInput");
-
-const editorCard = document.getElementById("editorCard");
-
-const logEl = document.getElementById("log");
-
-
-
-const log = (msg) => { logEl.textContent += msg + "\n"; };
-
-
-
-dropzone.onclick = () => fileInput.click();
-
-dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add("drag"); };
-
-dropzone.ondragleave = () => dropzone.classList.remove("drag");
-
-dropzone.ondrop = (e) => {
-
-e.preventDefault(); dropzone.classList.remove("drag");
-
-if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-
-};
-
-fileInput.onchange = (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); };
-
-
-
-async function handleFile(file) {
-
-logEl.textContent = "";
-
-currentFileName = file.name.replace(/\.zip$/i, "");
-
-try {
-
-currentZip = await JSZip.loadAsync(file);
-
-manifestName = "";
-
-manifestObj = null;
-
-
-
-for (const [name, entry] of Object.entries(currentZip.files)) {
-
-if (!entry.dir && name.endsWith(".json")) {
-
-try {
-
-const txt = await entry.async("string");
-
-const obj = JSON.parse(txt);
-
-if (obj && obj.format === "exvius-save-1") {
-
-manifestName = name;
-
-manifestObj = obj;
-
-break;
-
-}
-
-} catch {}
-
-}
-
-}
-
-
-
-if (!manifestObj) {
-
-alert("未在压缩包内找到 exvius-save-1 清单文件，请确认压缩包根目录是否正确。");
-
-return;
-
-}
-
-
-
-// 读取 campaign.json 显示当前货币
-
-if (currentZip.file("campaign.json")) {
-
-const cText = await currentZip.file("campaign.json").async("string");
-
-campaignObj = JSON.parse(cText);
-
-const cur = campaignObj.currencies || {};
-
-document.getElementById("lapisFree").value = cur.lapis_free ?? 0;
-
-document.getElementById("lapisPaid").value = cur.lapis_paid ?? 0;
-
-document.getElementById("gil").value = cur.gil ?? 0;
-
-document.getElementById("friendPoint").value = cur.friend_point ?? 0;
-
-}
-
-
-
-editorCard.classList.remove("hidden");
-
-log(`已加载: ${file.name} (清单: ${manifestName})`);
-
-} catch (err) {
-
-alert("读取 ZIP 失败: " + err.message);
-
-}
-
-}
-
-
-
-document.getElementById("fixBtn").onclick = async () => {
-
-if (!currentZip || !manifestObj) return;
-
-logEl.textContent = "开始处理...\n";
-
-
-
-// 如果有 campaign.json，写回表单中的货币值
-
-if (campaignObj) {
-
-campaignObj.currencies = campaignObj.currencies || {};
-
-campaignObj.currencies.lapis_free = Number(document.getElementById("lapisFree").value) || 0;
-
-campaignObj.currencies.lapis_paid = Number(document.getElementById("lapisPaid").value) || 0;
-
-campaignObj.currencies.gil = Number(document.getElementById("gil").value) || 0;
-
-campaignObj.currencies.friend_point = Number(document.getElementById("friendPoint").value) || 0;
-
-currentZip.file("campaign.json", JSON.stringify(campaignObj, null, 1));
-
-}
-
-
-
-// 重算 manifest.json 中所有非 null 条目的 length 与 sha256
-
-const entries = manifestObj.entries || {};
-
-for (const [entryPath, meta] of Object.entries(entries)) {
-
-if (meta === null) continue;
-
-const zFile = currentZip.file(entryPath);
-
-if (!zFile) {
-
-log(`警告: 压缩包内缺少 ${entryPath}`);
-
-continue;
-
-}
-
-const bytes = await zFile.async("uint8array");
-
-meta.length = bytes.length;
-
-meta.sha256 = sha256Hex(bytes);
-
-log(`已更新: ${entryPath} -> length=${meta.length}, sha256=${meta.sha256.slice(0, 12)}...`);
-
-}
-
-
-
-// 写回 manifest.json
-
-currentZip.file(manifestName, JSON.stringify(manifestObj));
-
-
-
-// 生成并下载新 ZIP
-
-const blob = await currentZip.generateAsync({ type: "blob", compression: "DEFLATE" });
-
-const a = document.createElement("a");
-
-a.href = URL.createObjectURL(blob);
-
-a.download = `${currentFileName}_fixed.zip`;
-
-a.click();
-
-URL.revokeObjectURL(a.href);
-
-log("\n完成！已触发下载，可直接导入游戏。");
-
-};
-
-</script>
-
+  <div class="card">
+    <h1>Exvius Offline 存档校验修复工具</h1>
+    <p class="sub">纯本地浏览器运行：自动重算 manifest.json 的 length 与 SHA-256，支持顺手修改基础货币。</p>
+    <label for="fileInput" id="dropzone" class="dropzone">
+      点击选择或拖入导出的存档 <b>.zip</b> 文件
+    </label>
+    <input type="file" id="fileInput" />
+  </div>
+
+  <div id="editorCard" class="card hidden">
+    <h1 style="font-size:1.05rem;">可选：快捷修改（不改可直接点下方修复）</h1>
+    <div class="grid">
+      <div>
+        <label class="field">免费宝石 (lapis_free)</label>
+        <input type="number" id="lapisFree" />
+      </div>
+      <div>
+        <label class="field">付费宝石 (lapis_paid)</label>
+        <input type="number" id="lapisPaid" />
+      </div>
+      <div>
+        <label class="field">金币 (gil)</label>
+        <input type="number" id="gil" />
+      </div>
+      <div>
+        <label class="field">友情点 (friend_point)</label>
+        <input type="number" id="friendPoint" />
+      </div>
+    </div>
+    <button id="fixBtn">重新计算校验并下载修复后的存档</button>
+    <a id="fallbackLink" class="fallback-dl hidden" href="#">未自动下载？点此手动保存存档</a>
+    <pre id="log"></pre>
+  </div>
+
+  <script>
+    function sha256Hex(bytes) {
+      const K = new Uint32Array([
+        0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+        0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+        0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+        0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+        0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+        0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+        0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+        0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+      ]);
+      let H = new Uint32Array([
+        0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
+        0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
+      ]);
+      const bitLen = bytes.length * 8;
+      const paddedLen = Math.ceil((bytes.length + 9) / 64) * 64;
+      const buf = new Uint8Array(paddedLen);
+      buf.set(bytes);
+      buf[bytes.length] = 0x80;
+      const view = new DataView(buf.buffer);
+      view.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
+      view.setUint32(paddedLen - 4, bitLen >>> 0, false);
+
+      const W = new Uint32Array(64);
+      const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+      for (let off = 0; off < paddedLen; off += 64) {
+        for (let i = 0; i < 16; i++) W[i] = view.getUint32(off + i * 4, false);
+        for (let i = 16; i < 64; i++) {
+          const s0 = rotr(W[i-15], 7) ^ rotr(W[i-15], 18) ^ (W[i-15] >>> 3);
+          const s1 = rotr(W[i-2], 17) ^ rotr(W[i-2], 19) ^ (W[i-2] >>> 10);
+          W[i] = (W[i-16] + s0 + W[i-7] + s1) >>> 0;
+        }
+        let [a, b, c, d, e, f, g, h] = H;
+        for (let i = 0; i < 64; i++) {
+          const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+          const ch = (e & f) ^ (~e & g);
+          const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
+          const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const temp2 = (S0 + maj) >>> 0;
+          h = g; g = f; f = e; e = (d + temp1) >>> 0;
+          d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+        }
+        H[0]=(H[0]+a)>>>0; H[1]=(H[1]+b)>>>0; H[2]=(H[2]+c)>>>0; H[3]=(H[3]+d)>>>0;
+        H[4]=(H[4]+e)>>>0; H[5]=(H[5]+f)>>>0; H[6]=(H[6]+g)>>>0; H[7]=(H[7]+h)>>>0;
+      }
+      return Array.from(H).map(x => x.toString(16).padStart(8, "0")).join("");
+    }
+
+    let currentZip = null;
+    let currentFileName = "";
+    let manifestName = "";
+    let manifestObj = null;
+    let campaignObj = null;
+    let lastBlobUrl = null;
+
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const editorCard = document.getElementById("editorCard");
+    const fallbackLink = document.getElementById("fallbackLink");
+    const logEl = document.getElementById("log");
+
+    const log = (msg) => { logEl.textContent += msg + "\n"; };
+
+    dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add("drag"); };
+    dropzone.ondragleave = () => dropzone.classList.remove("drag");
+    dropzone.ondrop = (e) => {
+      e.preventDefault(); dropzone.classList.remove("drag");
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    };
+    fileInput.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+      fileInput.value = "";
+    };
+
+    async function handleFile(file) {
+      logEl.textContent = "";
+      fallbackLink.classList.add("hidden");
+
+      if (typeof JSZip === "undefined") {
+        alert("JSZip 组件加载失败，请检查网络连接（需访问 jsdelivr CDN）后刷新页面。");
+        return;
+      }
+
+      currentFileName = file.name.replace(/\.zip$/i, "");
+      try {
+        currentZip = await JSZip.loadAsync(file);
+        manifestName = "";
+        manifestObj = null;
+
+        for (const [name, entry] of Object.entries(currentZip.files)) {
+          if (!entry.dir && name.endsWith(".json")) {
+            try {
+              const txt = await entry.async("string");
+              const obj = JSON.parse(txt);
+              if (obj && obj.format === "exvius-save-1") {
+                manifestName = name;
+                manifestObj = obj;
+                break;
+              }
+            } catch {}
+          }
+        }
+
+        if (!manifestObj) {
+          alert("未在压缩包内找到 exvius-save-1 清单文件，请确认压缩包根目录是否正确。");
+          return;
+        }
+
+        if (currentZip.file("campaign.json")) {
+          const cText = await currentZip.file("campaign.json").async("string");
+          campaignObj = JSON.parse(cText);
+          const cur = campaignObj.currencies || {};
+          document.getElementById("lapisFree").value = cur.lapis_free ?? 0;
+          document.getElementById("lapisPaid").value = cur.lapis_paid ?? 0;
+          document.getElementById("gil").value = cur.gil ?? 0;
+          document.getElementById("friendPoint").value = cur.friend_point ?? 0;
+        }
+
+        editorCard.classList.remove("hidden");
+        log(`已加载: ${file.name} (清单: ${manifestName})`);
+      } catch (err) {
+        alert("读取 ZIP 失败: " + err.message);
+      }
+    }
+
+    document.getElementById("fixBtn").onclick = async () => {
+      if (!currentZip || !manifestObj) return;
+      logEl.textContent = "开始处理...\n";
+
+      // 修正 JSZip 默认使用 UTC 导致东八区慢 8 小时的问题
+      const localDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+
+      if (campaignObj) {
+        campaignObj.currencies = campaignObj.currencies || {};
+        campaignObj.currencies.lapis_free = Number(document.getElementById("lapisFree").value) || 0;
+        campaignObj.currencies.lapis_paid = Number(document.getElementById("lapisPaid").value) || 0;
+        campaignObj.currencies.gil = Number(document.getElementById("gil").value) || 0;
+        campaignObj.currencies.friend_point = Number(document.getElementById("friendPoint").value) || 0;
+        currentZip.file("campaign.json", JSON.stringify(campaignObj, null, 1), { date: localDate });
+      }
+
+      const entries = manifestObj.entries || {};
+      for (const [entryPath, meta] of Object.entries(entries)) {
+        if (meta === null) continue;
+        const zFile = currentZip.file(entryPath);
+        if (!zFile) {
+          log(`警告: 压缩包内缺少 ${entryPath}`);
+          continue;
+        }
+        const bytes = await zFile.async("uint8array");
+        meta.length = bytes.length;
+        meta.sha256 = sha256Hex(bytes);
+        log(`已更新: ${entryPath} -> length=${meta.length}, sha256=${meta.sha256.slice(0, 12)}...`);
+      }
+
+      currentZip.file(manifestName, JSON.stringify(manifestObj), { date: localDate });
+
+      const blob = await currentZip.generateAsync({ type: "blob", compression: "DEFLATE" });
+      if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
+      lastBlobUrl = URL.createObjectURL(blob);
+
+      const outName = `${currentFileName}_fixed.zip`;
+      fallbackLink.href = lastBlobUrl;
+      fallbackLink.download = outName;
+      fallbackLink.classList.remove("hidden");
+
+      const a = document.createElement("a");
+      a.href = lastBlobUrl;
+      a.download = outName;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      log("\n完成！如未自动开始下载，请点击上方绿色按钮手动保存。");
+    };
+  </script>
 </body>
-
 </html>
