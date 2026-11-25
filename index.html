@@ -1091,6 +1091,18 @@ function pickUnitHit(id, name) {
   banner.classList.remove("hidden");
   document.getElementById("addUnitHits").classList.add("hidden");
 }
+function defaultAffinityForUnit(masterId) {
+  const id = String(masterId);
+  // 超级信赖度莫古利 (906000xxx) 自动设为 100% 超信
+  if (id.startsWith("906000")) {
+    return [["", "1000"], ["", "70:0:0:1000:0:0:0"]];
+  }
+  // 信赖度莫古利 (904000xxx，排除原晶莫古利 904000115) 自动设为 100% 信赖
+  if (id.startsWith("904000") && id !== "904000115") {
+    return [["1000", ""], ["70:0:0:1000:0:0:0", ""]];
+  }
+  return [["", ""], ["", ""]];
+}
 function submitAddUnit() {
   const master = Number(document.getElementById("addUnitMaster").value);
   const level = Number(document.getElementById("addUnitLevel").value) || 1;
@@ -1100,6 +1112,7 @@ function submitAddUnit() {
   if (!Array.isArray(saveData.roster)) saveData.roster = [];
   const tpl = saveData.roster[0] ? JSON.parse(JSON.stringify(saveData.roster[0])) : {};
   const inst = nextInstanceId(saveData.roster);
+  const [affinityPoints, affinityInfo] = defaultAffinityForUnit(master);
   Object.assign(tpl, {
     instance_id: String(inst),
     master_id: String(master),
@@ -1107,7 +1120,8 @@ function submitAddUnit() {
     guest: 0, storage_state: 0, favourite: fav ? 1 : 0,
     granted_rarity: null, first_get_unit_id: null, lb_level: 1,
     equipment: {"1":"0","2":"0","3":"0","4":"0","5":"0","6":"0"},
-    materia: ["0"], vision_card: "", affinity_points: ["",""], affinity_info: ["",""], skin_id: 0
+    materia: ["0"], vision_card: "",
+    affinity_points: affinityPoints, affinity_info: affinityInfo, skin_id: 0
   });
   saveData.roster.push(tpl);
   if (saveData.counts) saveData.counts.unit = saveData.roster.length;
